@@ -5,11 +5,11 @@ public class Horse : MonoBehaviour
 {
     public Rigidbody2D horseRigidBody;
     public float moveSpeed = 5f;
-
-    // assign in inspector OR get in Awake()
     public SpriteRenderer spriteRenderer;
+    public ProvinceNameDisplay provinceNameDisplay;
 
     private Vector2 moveDir;
+
 
     private void Awake()
     {
@@ -18,6 +18,9 @@ public class Horse : MonoBehaviour
 
         if (spriteRenderer == null)
             spriteRenderer = GetComponent<SpriteRenderer>();
+
+        if (provinceNameDisplay == null)
+            provinceNameDisplay = FindFirstObjectByType<ProvinceNameDisplay>();
     }
 
     private void Update()
@@ -62,6 +65,7 @@ public class Horse : MonoBehaviour
     if (other.CompareTag("Province"))
     {
         Debug.Log("Ata province girdi: " + other.name);
+        provinceNameDisplay.ShowProvinceName(other);
         // burada istediğin işlemi yap
     }
     }
@@ -71,6 +75,7 @@ public class Horse : MonoBehaviour
     if (other.CompareTag("Province"))
     {
         Debug.Log("At province'den çıktı: " + other.name);
+        provinceNameDisplay.HideProvinceName();
     }
     }   
 }
