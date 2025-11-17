@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 public class Horse : MonoBehaviour
 {
@@ -9,7 +10,9 @@ public class Horse : MonoBehaviour
     public ProvinceNameDisplay provinceNameDisplay;
 
     private Vector2 moveDir;
+    private HashSet<ProvinceModel> currentProvinces = new HashSet<ProvinceModel>();
 
+    private ProvinceModel lastHighlightedProvince = null;
 
     private void Awake()
     {
@@ -29,7 +32,6 @@ public class Horse : MonoBehaviour
 
         Vector2 input = Vector2.zero;
 
-        // WASD = world-space X/Y movement
         if (Keyboard.current.wKey.isPressed) input.y += 1;
         if (Keyboard.current.sKey.isPressed) input.y -= 1;
         if (Keyboard.current.aKey.isPressed) input.x -= 1;
@@ -37,17 +39,17 @@ public class Horse : MonoBehaviour
 
         moveDir = input.normalized;
 
-        // ---- Flip sprite horizontally depending on direction ----
         if (moveDir.x > 0.01f)
         {
-            // going right
             spriteRenderer.flipX = false;
         }
         else if (moveDir.x < -0.01f)
         {
-            // going left
             spriteRenderer.flipX = true;
         }
+
+        // Her frame'de province kontrolü
+        CheckCurrentProvince();
     }
 
     private void FixedUpdate()
@@ -57,25 +59,81 @@ public class Horse : MonoBehaviour
         Vector2 targetPos = horseRigidBody.position +
                             moveDir * moveSpeed * Time.fixedDeltaTime;
 
-        horseRigidBody.MovePosition(targetPos);
+        if (!IsPositionBlocked(targetPos))
+        {
+            horseRigidBody.MovePosition(targetPos);
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-    if (other.CompareTag("Province"))
-    {
-        Debug.Log("Ata province girdi: " + other.name);
-        provinceNameDisplay.ShowProvinceName(other);
-        // burada istediğin işlemi yap
-    }
+        if (other.CompareTag("Province"))
+        {
+            Debug.Log("Ata province girdi: " + other.name);
+        }
     }
 
     private void OnTriggerExit2D(Collider2D other)
     {
-    if (other.CompareTag("Province"))
-    {
-        Debug.Log("At province'den çıktı: " + other.name);
-        provinceNameDisplay.HideProvinceName();
+        if (other.CompareTag("Province"))
+        {
+            Debug.Log("At province'den çıktı: " + other.name);
+        }
     }
-    }   
+
+    private void CheckCurrentProvince()
+    {
+        Collider2D[] hits = Physics2D.OverlapPointAll(transform.position);
+
+        currentProvinces.Clear();
+        ProvinceModel topProvince = null;
+
+        foreach (var hit in hits)
+        {
+            if (hit.CompareTag("Province"))
+            {
+                ProvinceModel province = hit.GetComponent<ProvinceModel>();
+                if (province != null)
+                {
+                    currentProvinces.Add(province);
+                    if (topProvince == null)
+                        topProvince = province;
+                }
+            }
+        }
+
+        // Eski province'in rengini geri al
+        if (lastHighlightedProvince != null && lastHighlightedProvince != topProvince)
+        {
+            lastHighlightedProvince.spriteRenderer.color = lastHighlightedProvince.provinceColor;
+        }
+
+        // Yeni province'i highlight et
+        if (topProvince != null)
+        {
+            provinceNameDisplay.ShowProvinceName(topProvince);
+
+            // Rengi koyulaştır (%70 daha koyu)
+            Color darkened = topProvince.provinceColor * 0.7f;
+            darkened.a = topProvince.provinceColor.a; // Alpha'yı koru
+            topProvince.spriteRenderer.color = darkened;
+
+            lastHighlightedProvince = topProvince;
+        }
+        else
+        {
+            provinceNameDisplay.HideProvinceName();
+            lastHighlightedProvince = null;
+        }
+    }
+    private bool IsPositionBlocked(Vector2 position)
+{
+    Collider2D[] hits = Physics2D.OverlapPointAll(position);
+    foreach (var hit in hits)
+    {
+        if (hit.CompareTag("River") )
+            return true;
+    }
+    return false;
+}
 }

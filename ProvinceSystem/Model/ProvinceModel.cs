@@ -25,8 +25,15 @@ public class ProvinceModel : MonoBehaviour
         if (!string.IsNullOrEmpty(provinceTag))
         {
             try
-            {
-                gameObject.tag = provinceTag;
+            {   
+                if(provinceId == 7)
+                {
+                    gameObject.tag = "River";
+                }else
+                {
+                    gameObject.tag = provinceTag;
+                }
+                
             }
             catch
             {
