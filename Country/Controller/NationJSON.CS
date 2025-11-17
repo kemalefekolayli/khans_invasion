@@ -7,3 +7,9 @@ public class NationJson
     public string aggression;
     public string description;
 }
+
+[System.Serializable]
+public class NationListWrapper
+{
+    public NationJson[] nations;
+}
