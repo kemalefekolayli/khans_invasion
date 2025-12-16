@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using UnityEngine;
+using System;
 using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
@@ -196,6 +197,8 @@ public class ProvinceAssignmentEditor : EditorWindow
             Debug.LogError($"Nation {nationId} not found!");
             return;
         }
+
+
         
         // Remove from old nation
         if (province.provinceOwner != null)

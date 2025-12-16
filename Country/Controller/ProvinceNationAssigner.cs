@@ -84,12 +84,17 @@ public class ProvinceNationAssigner : MonoBehaviour
         int assignedCount = 0;
         foreach (ProvinceAssignment assignment in wrapper.assignments)
         {
+            
             if (provincesById.ContainsKey(assignment.provinceId))
             {
                 ProvinceModel province = provincesById[assignment.provinceId];
                 NationModel nation = nationLoader.GetNationById(assignment.nationId);
 
-                if (nation != null)
+                if(province.CompareTag("River"))
+                {
+                    Debug.LogError("asd"); 
+                }
+                else if (nation != null)
                 {
                     // Assign nation to province
                     province.provinceOwner = nation;

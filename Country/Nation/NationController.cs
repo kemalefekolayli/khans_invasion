@@ -6,6 +6,6 @@ public class NationController : MonoBehaviour
 
     void Update()
     {
-        // AI loop, interactivity, saldırı, hareket...
+       
     }
 }

@@ -10,6 +10,7 @@ public enum nationAgression
 [System.Serializable]
 public class NationModel
 {
+    public bool isPlayer = false;
     public long nationId;
     public string nationName;
     public string nationColor;

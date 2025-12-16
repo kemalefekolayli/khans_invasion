@@ -57,15 +57,13 @@ public class ProvinceModel : MonoBehaviour
             // Yeni collider ekle
             collider = gameObject.AddComponent<PolygonCollider2D>();
 
-            // Unity otomatik olarak sprite'dan polygon oluşturur!
-            Debug.Log($"✓ {provinceName} için collider oluşturuldu");
         }
         else if (collider != null && spriteRenderer != null && spriteRenderer.sprite != null)
         {
             // Collider varsa ama yanlış olabilir - yenile
             Destroy(collider);
             collider = gameObject.AddComponent<PolygonCollider2D>();
-            Debug.Log($"✓ {provinceName} collider'ı yenilendi");
+
         }
         collider.isTrigger = true;  
     }
