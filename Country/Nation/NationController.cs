@@ -4,8 +4,8 @@ public class NationController : MonoBehaviour
 {
     public NationModel model;
 
-    void Update()
+    public void PickNation(NationModel nation)
     {
-       
+        
     }
 }
