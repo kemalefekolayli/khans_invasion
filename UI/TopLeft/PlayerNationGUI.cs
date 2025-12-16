@@ -14,35 +14,54 @@ public class PlayerNationGUI : MonoBehaviour
     
     [Header("References")]
     public PlayerNation playerNation;
-    
-    [Header("Update Settings")]
-    public float updateInterval = 0.5f; // TODO HORRIBLE LOGIC - WE WILL DYNAMICALLY UPDATE AT EVERY TURN Update every 0.5 seconds
-    
-    private float updateTimer;
+
+    private void OnEnable()
+    {
+        // Subscribe to events
+        GameEvents.OnPlayerNationReady += OnPlayerNationReady;
+        GameEvents.OnPlayerStatsChanged += OnPlayerStatsChanged;
+        GameEvents.OnPlayerNationChanged += OnPlayerNationChanged;
+        GameEvents.OnTurnEnded += OnTurnEnded;
+    }
+
+    private void OnDisable()
+    {
+        // Unsubscribe from events
+        GameEvents.OnPlayerNationReady -= OnPlayerNationReady;
+        GameEvents.OnPlayerStatsChanged -= OnPlayerStatsChanged;
+        GameEvents.OnPlayerNationChanged -= OnPlayerNationChanged;
+        GameEvents.OnTurnEnded -= OnTurnEnded;
+    }
 
     private void Start()
     {
-        // Try to find PlayerNation if not assigned
-        if (playerNation == null)
-        {
-            playerNation = PlayerNation.Instance;
-            
-            if (playerNation == null)
-            {
-                playerNation = FindFirstObjectByType<PlayerNation>();
-            }
-        }
-        
-        // Auto-find text components if not assigned
+        // Auto-find text components
         FindTextReferences();
-        
-        // Initial update
+    }
+
+    private void OnPlayerNationReady()
+    {
+        // Player nation is ready, update GUI
+        UpdateGUI();
+    }
+
+    private void OnPlayerStatsChanged()
+    {
+        UpdateGUI();
+    }
+
+    private void OnPlayerNationChanged(NationModel newNation)
+    {
+        UpdateGUI();
+    }
+
+    private void OnTurnEnded(int newTurn)
+    {
         UpdateGUI();
     }
 
     private void FindTextReferences()
     {
-        // Find by name if not assigned
         if (nationNameText == null)
             nationNameText = FindTextByName("NationNameText");
         
@@ -85,49 +104,44 @@ public class PlayerNationGUI : MonoBehaviour
         return null;
     }
 
-    private void Update()
-    {
-        updateTimer += Time.deltaTime;
-        
-        if (updateTimer >= updateInterval)
-        {
-            updateTimer = 0f;
-            UpdateGUI();
-        }
-    }
-
     public void UpdateGUI()
     {
+        // Try to find PlayerNation if not assigned
         if (playerNation == null)
         {
-            // Try to find again
             playerNation = PlayerNation.Instance ?? FindFirstObjectByType<PlayerNation>();
             
             if (playerNation == null)
                 return;
         }
         
-        // Update all text fields
+        // Check if player has a nation assigned
+        if (playerNation.currentNation == null)
+            return;
+        
+        // Update all text fields using the properties
         if (nationNameText != null)
-            nationNameText.text = playerNation.nationName;
+            nationNameText.text = playerNation.NationName;
         
         if (taxText != null)
-            taxText.text = FormatNumber(playerNation.taxIncome);
+            taxText.text = FormatNumber(playerNation.TaxIncome);
         
         if (tradeText != null)
-            tradeText.text = FormatNumber(playerNation.tradeIncome);
+            tradeText.text = FormatNumber(playerNation.TradeIncome);
         
         if (armySizeText != null)
-            armySizeText.text = FormatNumber(playerNation.armySize);
+            armySizeText.text = FormatNumber(playerNation.ArmySize);
         
         if (armyStrText != null)
-            armyStrText.text = FormatNumber(playerNation.armyStrength);
+            armyStrText.text = FormatNumber(playerNation.ArmyStrength);
         
         if (cityCountText != null)
-            cityCountText.text = playerNation.cityCount.ToString();
+            cityCountText.text = playerNation.CityCount.ToString();
         
         if (turnCountText != null)
             turnCountText.text = $"Turn {playerNation.currentTurn}";
+        
+        Debug.Log($"GUI Updated: {playerNation.NationName}, Cities: {playerNation.CityCount}");
     }
 
     // Format large numbers nicely (e.g., 1500 -> "1.5K")
@@ -139,15 +153,5 @@ public class PlayerNationGUI : MonoBehaviour
             return $"{value / 1000f:F1}K";
         else
             return $"{value:F0}";
-    }
-
-    // Call this when player nation changes (e.g., after conquering a province)
-    public void RefreshStats()
-    {
-        if (playerNation != null)
-        {
-            playerNation.RecalculateStats();
-            UpdateGUI();
-        }
     }
 }

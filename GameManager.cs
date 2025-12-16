@@ -3,10 +3,10 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     [Header("Harita Prefab'ı")]
-    public GameObject completeMapPrefab; // CompleteMap prefab'ını buraya sürükle
+    public GameObject completeMapPrefab;
 
     [Header("GUI Prefab")]
-    public GameObject topLeftGUIPrefab; // CompleteMap prefab'ını buraya sürükle
+    public GameObject topLeftGUIPrefab;
     
     [Header("Ayarlar")]
     public bool loadMapOnStart = true;
@@ -24,12 +24,31 @@ public class GameManager : MonoBehaviour
 
     public void LoadMap()
     {
-    
-        // Yeni haritayı yükle
-        currentMap = Instantiate(completeMapPrefab);
+        // Load the map prefab
+        if (completeMapPrefab != null)
+        {
+            currentMap = Instantiate(completeMapPrefab);
+            Debug.Log("✓ Map prefab instantiated");
+        }
+        else
+        {
+            Debug.LogError("CompleteMap prefab not assigned!");
+        }
 
-        // load player gui
-        currentGUI = Instantiate(topLeftGUIPrefab);
+        // Load player GUI
+        if (topLeftGUIPrefab != null)
+        {
+            currentGUI = Instantiate(topLeftGUIPrefab);
+            Debug.Log("✓ GUI prefab instantiated");
+        }
+        
+        // Fire event - map is loaded
+        // Small delay to ensure all province components are initialized
+        Invoke(nameof(FireMapLoadedEvent), 0.5f);
     }
 
+    private void FireMapLoadedEvent()
+    {
+        GameEvents.MapLoaded();
+    }
 }

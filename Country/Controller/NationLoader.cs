@@ -46,6 +46,9 @@ public class NationLoader : MonoBehaviour
         }
 
         Debug.Log($"✓ Loaded {allNations.Count} nations from JSON");
+        
+        // Fire event - nations are ready
+        GameEvents.NationsLoaded();
     }
 
     nationAgression ConvertAggression(string aggr)

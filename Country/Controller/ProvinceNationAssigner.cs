@@ -25,15 +25,48 @@ public class ProvinceNationAssigner : MonoBehaviour
     public string assignmentsFileName = "province_assignments.json";
 
     private Dictionary<int, ProvinceModel> provincesById = new Dictionary<int, ProvinceModel>();
+    private bool nationsReady = false;
+    private bool mapReady = false;
+
+    void OnEnable()
+    {
+        // Subscribe to events
+        GameEvents.OnNationsLoaded += OnNationsLoaded;
+        GameEvents.OnMapLoaded += OnMapLoaded;
+    }
+
+    void OnDisable()
+    {
+        // Unsubscribe from events
+        GameEvents.OnNationsLoaded -= OnNationsLoaded;
+        GameEvents.OnMapLoaded -= OnMapLoaded;
+    }
 
     void Start()
     {
         // Find references if not assigned
         if (nationLoader == null)
             nationLoader = FindFirstObjectByType<NationLoader>();
+    }
 
-        // Wait for prefab to load
-        Invoke(nameof(AssignProvinces), 2f);
+    private void OnNationsLoaded()
+    {
+        nationsReady = true;
+        TryAssignProvinces();
+    }
+
+    private void OnMapLoaded()
+    {
+        mapReady = true;
+        TryAssignProvinces();
+    }
+
+    private void TryAssignProvinces()
+    {
+        // Only proceed when both nations and map are ready
+        if (!nationsReady || !mapReady) return;
+        
+        AssignProvinces();
     }
 
     void AssignProvinces()
@@ -45,6 +78,9 @@ public class ProvinceNationAssigner : MonoBehaviour
         LoadAssignments();
 
         Debug.Log("✓ Province-Nation assignment complete!");
+        
+        // Fire event - provinces are assigned
+        GameEvents.ProvincesAssigned();
     }
 
     void CollectProvinces()
@@ -84,15 +120,14 @@ public class ProvinceNationAssigner : MonoBehaviour
         int assignedCount = 0;
         foreach (ProvinceAssignment assignment in wrapper.assignments)
         {
-            
             if (provincesById.ContainsKey(assignment.provinceId))
             {
                 ProvinceModel province = provincesById[assignment.provinceId];
                 NationModel nation = nationLoader.GetNationById(assignment.nationId);
 
-                if(province.CompareTag("River"))
+                if (province.CompareTag("River"))
                 {
-                    Debug.LogError("asd"); 
+                    // Skip rivers
                 }
                 else if (nation != null)
                 {
@@ -101,7 +136,10 @@ public class ProvinceNationAssigner : MonoBehaviour
                     province.provinceName = assignment.provinceName;
 
                     // Add province to nation's list
-                    nation.provinceList.Add(province);
+                    if (!nation.provinceList.Contains(province))
+                    {
+                        nation.provinceList.Add(province);
+                    }
 
                     // Color the province with nation color
                     Color nationColor = NationLoader.HexToColor(nation.nationColor);
@@ -159,9 +197,15 @@ public class ProvinceNationAssigner : MonoBehaviour
             if (provincesById.ContainsKey(provinceId))
             {
                 ProvinceModel province = provincesById[provinceId];
+                
+                NationModel oldOwner = province.provinceOwner;
+                
                 province.provinceOwner = nation;
                 nation.provinceList.Add(province);
                 province.SetNationColor(nationColor);
+                
+                // Fire event for province ownership change
+                GameEvents.ProvinceOwnerChanged(province, oldOwner, nation);
             }
         }
 
