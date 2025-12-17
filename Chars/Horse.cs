@@ -69,7 +69,7 @@ public class Horse : MonoBehaviour
     {
         if (other.CompareTag("Province"))
         {
-            Debug.Log("Ata province girdi: " + other.name);
+
         }
     }
 
@@ -77,7 +77,7 @@ public class Horse : MonoBehaviour
     {
         if (other.CompareTag("Province"))
         {
-            Debug.Log("At province'den çıktı: " + other.name);
+
         }
     }
 

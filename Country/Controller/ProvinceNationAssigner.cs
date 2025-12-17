@@ -30,9 +30,15 @@ public class ProvinceNationAssigner : MonoBehaviour
 
     void OnEnable()
     {
-        // Subscribe to events
-        GameEvents.OnNationsLoaded += OnNationsLoaded;
-        GameEvents.OnMapLoaded += OnMapLoaded;
+    GameEvents.OnNationsLoaded += OnNationsLoaded;
+    GameEvents.OnMapLoaded += OnMapLoaded;
+    
+    // Check if events already fired
+    NationLoader loader = FindFirstObjectByType<NationLoader>();
+    if (loader != null && loader.allNations.Count > 0)
+    {
+        OnNationsLoaded();
+    }
     }
 
     void OnDisable()
@@ -64,6 +70,7 @@ public class ProvinceNationAssigner : MonoBehaviour
     private void TryAssignProvinces()
     {
         // Only proceed when both nations and map are ready
+        Debug.Log($"TryAssignProvinces: nationsReady={nationsReady}, mapReady={mapReady}");
         if (!nationsReady || !mapReady) return;
         
         AssignProvinces();
