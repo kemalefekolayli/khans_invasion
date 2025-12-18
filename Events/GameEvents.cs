@@ -9,31 +9,22 @@ public static class GameEvents
 {
     // ===== INITIALIZATION EVENTS =====
     
-    /// <summary>Fired when NationLoader finishes loading all nations from JSON</summary>
     public static event Action OnNationsLoaded;
-    
-    /// <summary>Fired when all provinces are assigned to nations</summary>
     public static event Action OnProvincesAssigned;
-    
-    /// <summary>Fired when PlayerNation is initialized and ready</summary>
     public static event Action OnPlayerNationReady;
-    
-    /// <summary>Fired when the map (provinces) is fully loaded</summary>
     public static event Action OnMapLoaded;
     
     // ===== GAMEPLAY EVENTS =====
     
-    /// <summary>Fired when a turn ends</summary>
-    public static event Action<int> OnTurnEnded; // passes new turn number
-    
-    /// <summary>Fired when player's nation changes (e.g., switched nations)</summary>
+    public static event Action<int> OnTurnEnded;
     public static event Action<NationModel> OnPlayerNationChanged;
-    
-    /// <summary>Fired when a province changes ownership</summary>
-    public static event Action<ProvinceModel, NationModel, NationModel> OnProvinceOwnerChanged; // province, oldOwner, newOwner
-    
-    /// <summary>Fired when player stats need to be recalculated and GUI updated</summary>
+    public static event Action<ProvinceModel, NationModel, NationModel> OnProvinceOwnerChanged;
     public static event Action OnPlayerStatsChanged;
+    
+    // ===== PROVINCE DETECTION EVENTS =====
+    
+    public static event Action<ProvinceModel> OnProvinceEnter;
+    public static event Action<ProvinceModel> OnProvinceExit;
     
     // ===== INVOKE METHODS =====
     
@@ -82,5 +73,15 @@ public static class GameEvents
     public static void PlayerStatsChanged()
     {
         OnPlayerStatsChanged?.Invoke();
+    }
+    
+    public static void ProvinceEnter(ProvinceModel province)
+    {
+        OnProvinceEnter?.Invoke(province);
+    }
+    
+    public static void ProvinceExit(ProvinceModel province)
+    {
+        OnProvinceExit?.Invoke(province);
     }
 }

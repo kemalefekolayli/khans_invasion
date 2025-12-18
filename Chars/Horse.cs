@@ -2,17 +2,19 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
-public class Horse : MonoBehaviour
+public class Horse : MonoBehaviour, IProvinceDetector
 {
     public Rigidbody2D horseRigidBody;
     public float moveSpeed = 5f;
     public SpriteRenderer spriteRenderer;
-    public ProvinceNameDisplay provinceNameDisplay;
 
     private Vector2 moveDir;
     private HashSet<ProvinceModel> currentProvinces = new HashSet<ProvinceModel>();
+    private ProvinceModel currentProvince;
 
-    private ProvinceModel lastHighlightedProvince = null;
+    // IProvinceDetector implementation
+    public ProvinceModel CurrentProvince => currentProvince;
+    public Vector3 Position => transform.position;
 
     private void Awake()
     {
@@ -21,9 +23,6 @@ public class Horse : MonoBehaviour
 
         if (spriteRenderer == null)
             spriteRenderer = GetComponent<SpriteRenderer>();
-
-        if (provinceNameDisplay == null)
-            provinceNameDisplay = FindFirstObjectByType<ProvinceNameDisplay>();
     }
 
     private void Update()
@@ -40,15 +39,10 @@ public class Horse : MonoBehaviour
         moveDir = input.normalized;
 
         if (moveDir.x > 0.01f)
-        {
             spriteRenderer.flipX = false;
-        }
         else if (moveDir.x < -0.01f)
-        {
             spriteRenderer.flipX = true;
-        }
 
-        // Her frame'de province kontrolü
         CheckCurrentProvince();
     }
 
@@ -56,29 +50,10 @@ public class Horse : MonoBehaviour
     {
         if (moveDir.sqrMagnitude < 0.0001f) return;
 
-        Vector2 targetPos = horseRigidBody.position +
-                            moveDir * moveSpeed * Time.fixedDeltaTime;
+        Vector2 targetPos = horseRigidBody.position + moveDir * moveSpeed * Time.fixedDeltaTime;
 
         if (!IsPositionBlocked(targetPos))
-        {
             horseRigidBody.MovePosition(targetPos);
-        }
-    }
-
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.CompareTag("Province"))
-        {
-
-        }
-    }
-
-    private void OnTriggerExit2D(Collider2D other)
-    {
-        if (other.CompareTag("Province"))
-        {
-
-        }
     }
 
     private void CheckCurrentProvince()
@@ -102,38 +77,26 @@ public class Horse : MonoBehaviour
             }
         }
 
-        // Eski province'in rengini geri al
-        if (lastHighlightedProvince != null && lastHighlightedProvince != topProvince)
+        if (currentProvince != topProvince)
         {
-            lastHighlightedProvince.spriteRenderer.color = lastHighlightedProvince.provinceColor;
-        }
+            if (currentProvince != null)
+                GameEvents.ProvinceExit(currentProvince);
 
-        // Yeni province'i highlight et
-        if (topProvince != null)
-        {
-            provinceNameDisplay.ShowProvinceName(topProvince);
+            if (topProvince != null)
+                GameEvents.ProvinceEnter(topProvince);
 
-            // Rengi koyulaştır (%70 daha koyu)
-            Color darkened = topProvince.provinceColor * 0.7f;
-            darkened.a = topProvince.provinceColor.a; // Alpha'yı koru
-            topProvince.spriteRenderer.color = darkened;
-
-            lastHighlightedProvince = topProvince;
-        }
-        else
-        {
-            provinceNameDisplay.HideProvinceName();
-            lastHighlightedProvince = null;
+            currentProvince = topProvince;
         }
     }
+
     private bool IsPositionBlocked(Vector2 position)
-{
-    Collider2D[] hits = Physics2D.OverlapPointAll(position);
-    foreach (var hit in hits)
     {
-        if (hit.CompareTag("River") )
-            return true;
+        Collider2D[] hits = Physics2D.OverlapPointAll(position);
+        foreach (var hit in hits)
+        {
+            if (hit.CompareTag("River"))
+                return true;
+        }
+        return false;
     }
-    return false;
-}
 }

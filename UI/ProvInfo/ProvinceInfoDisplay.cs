@@ -1,4 +1,3 @@
-// ProvinceInfoDisplay.cs
 using UnityEngine;
 using TMPro;
 
@@ -29,15 +28,19 @@ public class ProvinceInfoDisplay : MonoBehaviour
             canvasGroup.alpha = 0;
     }
 
-    private void Update()
+    private void OnEnable()
     {
-        if (canvasGroup == null) return;
-        
-        float targetAlpha = isVisible ? 1f : 0f;
-        canvasGroup.alpha = Mathf.Lerp(canvasGroup.alpha, targetAlpha, Time.deltaTime * fadeSpeed);
+        GameEvents.OnProvinceEnter += OnProvinceEnter;
+        GameEvents.OnProvinceExit += OnProvinceExit;
     }
 
-    public void ShowProvinceInfo(ProvinceModel province)
+    private void OnDisable()
+    {
+        GameEvents.OnProvinceEnter -= OnProvinceEnter;
+        GameEvents.OnProvinceExit -= OnProvinceExit;
+    }
+
+    private void OnProvinceEnter(ProvinceModel province)
     {
         if (province == null) return;
         
@@ -46,10 +49,21 @@ public class ProvinceInfoDisplay : MonoBehaviour
         isVisible = true;
     }
 
-    public void HideProvinceInfo()
+    private void OnProvinceExit(ProvinceModel province)
     {
-        isVisible = false;
-        currentProvince = null;
+        if (currentProvince == province)
+        {
+            isVisible = false;
+            currentProvince = null;
+        }
+    }
+
+    private void Update()
+    {
+        if (canvasGroup == null) return;
+        
+        float targetAlpha = isVisible ? 1f : 0f;
+        canvasGroup.alpha = Mathf.Lerp(canvasGroup.alpha, targetAlpha, Time.deltaTime * fadeSpeed);
     }
 
     private void UpdateDisplay()
@@ -64,16 +78,16 @@ public class ProvinceInfoDisplay : MonoBehaviour
             string ownerName = currentProvince.provinceOwner != null 
                 ? currentProvince.provinceOwner.nationName 
                 : "Unowned";
-            ownerText.text = $"Owner: {ownerName}";
+            ownerText.text = $"{ownerName}";
         }
         
         if (populationText != null)
-            populationText.text = $"Population: {currentProvince.provinceCurrentPop:F0}/{currentProvince.provinceMaxPop:F0}";
+            populationText.text = $"{currentProvince.provinceCurrentPop:F0}/{currentProvince.provinceMaxPop:F0}";
         
         if (taxIncomeText != null)
-            taxIncomeText.text = $"Tax: {currentProvince.provinceTaxIncome:F0}";
+            taxIncomeText.text = $"{currentProvince.provinceTaxIncome:F0}";
         
         if (tradePowerText != null)
-            tradePowerText.text = $"Trade: {currentProvince.provinceTradePower:F0}";
+            tradePowerText.text = $"{currentProvince.provinceTradePower:F0}";
     }
-}
+}   

@@ -22,7 +22,7 @@ public class ProvinceNameDisplay : MonoBehaviour
     
     private Camera mainCamera;
     private ProvinceModel currentProvince;
-    private bool isDisplaying = false;
+    private bool isDisplaying;
     private CanvasGroup canvasGroup;
     private Vector3 basePosition;
     private float currentSlideOffset;
@@ -32,9 +32,7 @@ public class ProvinceNameDisplay : MonoBehaviour
         mainCamera = Camera.main;
         
         if (provinceNameText == null)
-        {
             provinceNameText = GetComponentInChildren<TextMeshProUGUI>();
-        }
         
         if (provinceNameText != null)
         {
@@ -45,69 +43,40 @@ public class ProvinceNameDisplay : MonoBehaviour
             
             canvasGroup = provinceNameText.gameObject.GetComponent<CanvasGroup>();
             if (canvasGroup == null)
-            {
                 canvasGroup = provinceNameText.gameObject.AddComponent<CanvasGroup>();
-            }
             
             canvasGroup.alpha = 0;
         }
     }
 
-    private void Update()
+    private void OnEnable()
     {
-        if (isDisplaying && provinceNameText != null)
-        {
-            // Update base position
-            if (followMouse)
-            {
-                basePosition = Input.mousePosition + offsetFromProvince;
-            }
-            else if (currentProvince != null)
-            {
-                Vector3 worldPos = currentProvince.transform.position + offsetFromProvince;
-                basePosition = mainCamera.WorldToScreenPoint(worldPos);
-            }
-            
-            // Fade in
-            canvasGroup.alpha = Mathf.Lerp(canvasGroup.alpha, 1f, Time.deltaTime * fadeSpeed);
-            
-            // Slide up
-            currentSlideOffset = Mathf.Lerp(currentSlideOffset, 0, Time.deltaTime * fadeSpeed);
-            provinceNameText.transform.position = basePosition + new Vector3(0, currentSlideOffset, 0);
-        }
-        else if (!isDisplaying && canvasGroup.alpha > 0.01f)
-        {
-            // Fade out
-            canvasGroup.alpha = Mathf.Lerp(canvasGroup.alpha, 0f, Time.deltaTime * fadeSpeed);
-            
-            // Slide up
-            currentSlideOffset = Mathf.Lerp(currentSlideOffset, slideDistance, Time.deltaTime * fadeSpeed);
-            provinceNameText.transform.position = basePosition + new Vector3(0, currentSlideOffset, 0);
-        }
+        GameEvents.OnProvinceEnter += OnProvinceEnter;
+        GameEvents.OnProvinceExit += OnProvinceExit;
     }
 
-    public void ShowProvinceName(ProvinceModel province)
+    private void OnDisable()
+    {
+        GameEvents.OnProvinceEnter -= OnProvinceEnter;
+        GameEvents.OnProvinceExit -= OnProvinceExit;
+    }
+
+    private void OnProvinceEnter(ProvinceModel province)
     {
         if (provinceNameText == null || province == null) return;
         
-        if (currentProvince != province)
-        {
-            currentProvince = province;
-            provinceNameText.text = province.provinceName;
-            
-            // Start below target
-            Vector3 worldPos = province.transform.position + offsetFromProvince;
-            basePosition = mainCamera.WorldToScreenPoint(worldPos);
-            currentSlideOffset = -slideDistance;
-        }
+        currentProvince = province;
+        provinceNameText.text = province.provinceName;
+        
+        Vector3 worldPos = province.transform.position + offsetFromProvince;
+        basePosition = mainCamera.WorldToScreenPoint(worldPos);
+        currentSlideOffset = -slideDistance;
         
         isDisplaying = true;
     }
 
-    public void HideProvinceName(ProvinceModel province)
+    private void OnProvinceExit(ProvinceModel province)
     {
-        if (provinceNameText == null) return;
-        
         if (currentProvince == province)
         {
             isDisplaying = false;
@@ -115,11 +84,29 @@ public class ProvinceNameDisplay : MonoBehaviour
         }
     }
 
-    public void HideProvinceName()
+    private void Update()
     {
-        if (provinceNameText == null) return;
+        if (canvasGroup == null) return;
         
-        isDisplaying = false;
-        currentProvince = null;
+        if (isDisplaying && provinceNameText != null)
+        {
+            if (followMouse)
+                basePosition = Input.mousePosition + offsetFromProvince;
+            else if (currentProvince != null)
+            {
+                Vector3 worldPos = currentProvince.transform.position + offsetFromProvince;
+                basePosition = mainCamera.WorldToScreenPoint(worldPos);
+            }
+            
+            canvasGroup.alpha = Mathf.Lerp(canvasGroup.alpha, 1f, Time.deltaTime * fadeSpeed);
+            currentSlideOffset = Mathf.Lerp(currentSlideOffset, 0, Time.deltaTime * fadeSpeed);
+            provinceNameText.transform.position = basePosition + new Vector3(0, currentSlideOffset, 0);
+        }
+        else if (canvasGroup.alpha > 0.01f)
+        {
+            canvasGroup.alpha = Mathf.Lerp(canvasGroup.alpha, 0f, Time.deltaTime * fadeSpeed);
+            currentSlideOffset = Mathf.Lerp(currentSlideOffset, slideDistance, Time.deltaTime * fadeSpeed);
+            provinceNameText.transform.position = basePosition + new Vector3(0, currentSlideOffset, 0);
+        }
     }
 }
