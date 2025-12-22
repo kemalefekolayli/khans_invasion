@@ -37,6 +37,7 @@ public class InteractionButtonDisplay : MonoBehaviour
         if (canvasGroup == null)
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
         
+        // Initialize as invisible (alpha = 0) but keep container active
         SetVisibility(false, true);
         
         Debug.Log($"[ButtonDisplay] Init - Container: {buttonContainer != null}, CanvasGroup: {canvasGroup != null}");
@@ -98,34 +99,29 @@ public class InteractionButtonDisplay : MonoBehaviour
     {
         if (canvasGroup == null) return;
         
-        if (!useFade)
+        float targetAlpha = shouldShow ? 1f : 0f;
+        
+        if (useFade)
         {
-            SetVisibility(shouldShow, true);
-            return;
+            canvasGroup.alpha = Mathf.Lerp(canvasGroup.alpha, targetAlpha, Time.deltaTime * fadeSpeed);
+        }
+        else
+        {
+            canvasGroup.alpha = targetAlpha;
         }
         
-        float targetAlpha = shouldShow ? 1f : 0f;
-        canvasGroup.alpha = Mathf.Lerp(canvasGroup.alpha, targetAlpha, Time.deltaTime * fadeSpeed);
         canvasGroup.interactable = shouldShow;
         canvasGroup.blocksRaycasts = shouldShow;
-        
-        if (buttonContainer != null)
-            buttonContainer.SetActive(canvasGroup.alpha > 0.01f);
     }
 
     private void SetVisibility(bool visible, bool immediate)
     {
         if (canvasGroup != null)
         {
-            if (immediate)
-                canvasGroup.alpha = visible ? 1f : 0f;
-            
+            canvasGroup.alpha = visible ? 1f : 0f;
             canvasGroup.interactable = visible;
             canvasGroup.blocksRaycasts = visible;
         }
-        
-        if (buttonContainer != null)
-            buttonContainer.SetActive(visible);
     }
 
     private void UpdatePosition()
