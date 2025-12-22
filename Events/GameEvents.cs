@@ -26,6 +26,22 @@ public static class GameEvents
     public static event Action<ProvinceModel> OnProvinceEnter;
     public static event Action<ProvinceModel> OnProvinceExit;
     
+    // ===== CITY CENTER EVENTS =====
+    
+    public static event Action<CityCenter> OnCityCenterEnter;
+    public static event Action<CityCenter> OnCityCenterExit;
+    
+    // ===== PROVINCE INTERACTION EVENTS =====
+    
+    public static event Action<ProvinceModel> OnProvinceManagementOpened;  // Player-owned
+    public static event Action<ProvinceModel> OnProvinceInteractionOpened; // Enemy/neutral
+    public static event Action OnProvincePanelClosed;
+    
+    // ===== BUILDING EVENTS =====
+    
+    public static event Action<ProvinceModel, string> OnBuildingConstructed;
+    public static event Action<ProvinceModel, string> OnBuildingDestroyed;
+    
     // ===== INVOKE METHODS =====
     
     public static void NationsLoaded()
@@ -83,5 +99,50 @@ public static class GameEvents
     public static void ProvinceExit(ProvinceModel province)
     {
         OnProvinceExit?.Invoke(province);
+    }
+    
+    // City Center Events
+    public static void CityCenterEnter(CityCenter cityCenter)
+    {
+        Debug.Log($">> Event: CityCenterEnter ({cityCenter?.Province?.provinceName})");
+        OnCityCenterEnter?.Invoke(cityCenter);
+    }
+    
+    public static void CityCenterExit(CityCenter cityCenter)
+    {
+        Debug.Log($">> Event: CityCenterExit ({cityCenter?.Province?.provinceName})");
+        OnCityCenterExit?.Invoke(cityCenter);
+    }
+    
+    // Province Interaction Events
+    public static void ProvinceManagementOpened(ProvinceModel province)
+    {
+        Debug.Log($">> Event: ProvinceManagementOpened ({province?.provinceName})");
+        OnProvinceManagementOpened?.Invoke(province);
+    }
+    
+    public static void ProvinceInteractionOpened(ProvinceModel province)
+    {
+        Debug.Log($">> Event: ProvinceInteractionOpened ({province?.provinceName})");
+        OnProvinceInteractionOpened?.Invoke(province);
+    }
+    
+    public static void ProvincePanelClosed()
+    {
+        Debug.Log(">> Event: ProvincePanelClosed");
+        OnProvincePanelClosed?.Invoke();
+    }
+    
+    // Building Events
+    public static void BuildingConstructed(ProvinceModel province, string buildingType)
+    {
+        Debug.Log($">> Event: BuildingConstructed ({buildingType} in {province?.provinceName})");
+        OnBuildingConstructed?.Invoke(province, buildingType);
+    }
+    
+    public static void BuildingDestroyed(ProvinceModel province, string buildingType)
+    {
+        Debug.Log($">> Event: BuildingDestroyed ({buildingType} in {province?.provinceName})");
+        OnBuildingDestroyed?.Invoke(province, buildingType);
     }
 }

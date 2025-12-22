@@ -11,10 +11,15 @@ public class Horse : MonoBehaviour, IProvinceDetector
     private Vector2 moveDir;
     private HashSet<ProvinceModel> currentProvinces = new HashSet<ProvinceModel>();
     private ProvinceModel currentProvince;
+    private CityCenter currentCityCenter;
 
     // IProvinceDetector implementation
     public ProvinceModel CurrentProvince => currentProvince;
+    public CityCenter CurrentCityCenter => currentCityCenter;
     public Vector3 Position => transform.position;
+    
+    // Check if horse is on a city center
+    public bool IsOnCityCenter => currentCityCenter != null;
 
     private void Awake()
     {
@@ -44,6 +49,7 @@ public class Horse : MonoBehaviour, IProvinceDetector
             spriteRenderer.flipX = true;
 
         CheckCurrentProvince();
+        CheckCityCenter();
     }
 
     private void FixedUpdate()
@@ -86,6 +92,43 @@ public class Horse : MonoBehaviour, IProvinceDetector
                 GameEvents.ProvinceEnter(topProvince);
 
             currentProvince = topProvince;
+        }
+    }
+
+    private void CheckCityCenter()
+    {
+        Collider2D[] hits = Physics2D.OverlapPointAll(transform.position);
+        
+        CityCenter detectedCityCenter = null;
+        
+        foreach (var hit in hits)
+        {
+            if (hit.CompareTag("CityCenter"))
+            {
+                CityCenter center = hit.GetComponent<CityCenter>();
+                if (center != null)
+                {
+                    detectedCityCenter = center;
+                    break;
+                }
+            }
+        }
+        
+        if (currentCityCenter != detectedCityCenter)
+        {
+            if (currentCityCenter != null)
+            {
+                currentCityCenter.SetHighlight(false);
+                GameEvents.CityCenterExit(currentCityCenter);
+            }
+            
+            if (detectedCityCenter != null)
+            {
+                detectedCityCenter.SetHighlight(true);
+                GameEvents.CityCenterEnter(detectedCityCenter);
+            }
+            
+            currentCityCenter = detectedCityCenter;
         }
     }
 

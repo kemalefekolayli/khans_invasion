@@ -7,6 +7,7 @@ public class GameManager : MonoBehaviour
 
     [Header("GUI Prefab")]
     public GameObject topLeftGUIPrefab;
+    public GameObject interactionButtonPrefab;
     [Header("Horse Prefab")]
     public GameObject horsePrefab;
     
@@ -19,6 +20,7 @@ public class GameManager : MonoBehaviour
     private GameObject currentMap;
     private GameObject horse;
     private GameObject currentGUI;
+    private GameObject interactionGUI;
 
     void Start()
     {
@@ -63,6 +65,7 @@ public class GameManager : MonoBehaviour
             
             // camera location setting 
             cameraController.SetCameraPosition(horse.transform.position);
+            interactionGUI = Instantiate(interactionButtonPrefab);
             Debug.Log($"✓ Horse spawned at {horseStartPosition}");
         }
         else
