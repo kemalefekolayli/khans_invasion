@@ -13,11 +13,16 @@ public class ProvinceModel : MonoBehaviour
     public float provinceTradePower;
     public float provinceCurrentPop;
     public float provinceMaxPop;
+    public float availableLoot; // we will make this recover after every turn 
+    public float defenceForceSize;
+    public float defenceForceStr;
+
 
     public StateModel provinceState;
     public NationModel provinceOwner;
     public string provinceTag = "Province";
     public List<ProvinceModel> neighbors = new List<ProvinceModel>();
+    public List<string> buildings = new List<string>();
 
     private void Awake()
     {

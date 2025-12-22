@@ -7,6 +7,8 @@ public class CityCenter : MonoBehaviour
 
     private NationModel ownerNation;
 
+   
+
     void Start()
     {
         if(province == null)
