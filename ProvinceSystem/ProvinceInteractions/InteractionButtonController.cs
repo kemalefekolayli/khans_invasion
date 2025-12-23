@@ -37,6 +37,9 @@ public class InteractionButtonController : MonoBehaviour
     private void OnEnable()
     {
         SubscribeToEvents();
+        
+        // Check if Horse is already on a city center (fixes race condition)
+        TryGetCurrentCityCenter();
     }
 
     private void SubscribeToEvents()
@@ -49,6 +52,18 @@ public class InteractionButtonController : MonoBehaviour
         
         isSubscribed = true;
         Debug.Log("[ButtonController] Subscribed to events");
+    }
+    
+    private void TryGetCurrentCityCenter()
+    {
+        // Find the Horse and check if it's on a city center
+        Horse horse = FindFirstObjectByType<Horse>();
+        if (horse != null && horse.CurrentCityCenter != null)
+        {
+            currentCityCenter = horse.CurrentCityCenter;
+            isActive = true;
+            Debug.Log($"[ButtonController] Found existing city center: {currentCityCenter.Province?.provinceName}");
+        }
     }
 
     private void OnDisable()
@@ -99,7 +114,6 @@ public class InteractionButtonController : MonoBehaviour
 
     private void OnButtonClicked()
     {
-        Debug.Log("[ButtonController] Button CLICKED");
         TriggerInteraction();
     }
 
