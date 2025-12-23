@@ -30,15 +30,15 @@ public class ProvinceNationAssigner : MonoBehaviour
 
     void OnEnable()
     {
-    GameEvents.OnNationsLoaded += OnNationsLoaded;
-    GameEvents.OnMapLoaded += OnMapLoaded;
+        GameEvents.OnNationsLoaded += OnNationsLoaded;
+        GameEvents.OnMapLoaded += OnMapLoaded;
     
-    // Check if events already fired
-    NationLoader loader = FindFirstObjectByType<NationLoader>();
-    if (loader != null && loader.allNations.Count > 0)
-    {
-        OnNationsLoaded();
-    }
+        // Check if events already fired
+        NationLoader loader = FindFirstObjectByType<NationLoader>();
+        if (loader != null && loader.allNations.Count > 0)
+        {
+            OnNationsLoaded();
+        }
     }
 
     void OnDisable()
@@ -140,7 +140,21 @@ public class ProvinceNationAssigner : MonoBehaviour
                 {
                     // Assign nation to province
                     province.provinceOwner = nation;
-                    province.provinceName = assignment.provinceName;
+                    
+                    // FIXED: Only use JSON name if prefab name is default/empty
+                    // Keep the prefab's custom name if it was set manually
+                    if (string.IsNullOrEmpty(province.provinceName) || 
+                        province.provinceName.StartsWith("Province_") ||
+                        province.provinceName == province.gameObject.name)
+                    {
+                        // Use JSON name only if province has default naming
+                        if (!string.IsNullOrEmpty(assignment.provinceName) && 
+                            !assignment.provinceName.StartsWith("Province_"))
+                        {
+                            province.provinceName = assignment.provinceName;
+                        }
+                    }
+                    // Otherwise keep the prefab's provinceName as-is
 
                     // Add province to nation's list
                     if (!nation.provinceList.Contains(province))

@@ -22,6 +22,7 @@ public class InteractionButtonDisplay : MonoBehaviour
     private CityCenter currentCityCenter;
     private Camera mainCamera;
     private RectTransform rectTransform;
+    private bool isSubscribed = false;
 
     private void Awake()
     {
@@ -37,28 +38,48 @@ public class InteractionButtonDisplay : MonoBehaviour
         if (canvasGroup == null)
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
         
-        // Initialize as invisible (alpha = 0) but keep container active
         SetVisibility(false, true);
         
         Debug.Log($"[ButtonDisplay] Init - Container: {buttonContainer != null}, CanvasGroup: {canvasGroup != null}");
     }
 
+    private void Start()
+    {
+        // Subscribe in Start to ensure GameEvents is ready
+        SubscribeToEvents();
+    }
+
     private void OnEnable()
     {
+        // Also try OnEnable in case object was disabled/enabled
+        SubscribeToEvents();
+    }
+
+    private void SubscribeToEvents()
+    {
+        if (isSubscribed) return;
+        
         GameEvents.OnCityCenterEnter += OnCityCenterEnter;
         GameEvents.OnCityCenterExit += OnCityCenterExit;
         GameEvents.OnProvinceManagementOpened += OnPanelOpened;
         GameEvents.OnProvinceInteractionOpened += OnPanelOpened;
         GameEvents.OnProvincePanelClosed += OnPanelClosed;
+        
+        isSubscribed = true;
+        Debug.Log("[ButtonDisplay] Subscribed to events");
     }
 
     private void OnDisable()
     {
+        if (!isSubscribed) return;
+        
         GameEvents.OnCityCenterEnter -= OnCityCenterEnter;
         GameEvents.OnCityCenterExit -= OnCityCenterExit;
         GameEvents.OnProvinceManagementOpened -= OnPanelOpened;
         GameEvents.OnProvinceInteractionOpened -= OnPanelOpened;
         GameEvents.OnProvincePanelClosed -= OnPanelClosed;
+        
+        isSubscribed = false;
     }
 
     private void OnCityCenterEnter(CityCenter cityCenter)
@@ -99,29 +120,34 @@ public class InteractionButtonDisplay : MonoBehaviour
     {
         if (canvasGroup == null) return;
         
+        if (!useFade)
+        {
+            SetVisibility(shouldShow, true);
+            return;
+        }
+        
         float targetAlpha = shouldShow ? 1f : 0f;
-        
-        if (useFade)
-        {
-            canvasGroup.alpha = Mathf.Lerp(canvasGroup.alpha, targetAlpha, Time.deltaTime * fadeSpeed);
-        }
-        else
-        {
-            canvasGroup.alpha = targetAlpha;
-        }
-        
+        canvasGroup.alpha = Mathf.Lerp(canvasGroup.alpha, targetAlpha, Time.deltaTime * fadeSpeed);
         canvasGroup.interactable = shouldShow;
         canvasGroup.blocksRaycasts = shouldShow;
+        
+        if (buttonContainer != null)
+            buttonContainer.SetActive(canvasGroup.alpha > 0.01f);
     }
 
     private void SetVisibility(bool visible, bool immediate)
     {
         if (canvasGroup != null)
         {
-            canvasGroup.alpha = visible ? 1f : 0f;
+            if (immediate)
+                canvasGroup.alpha = visible ? 1f : 0f;
+            
             canvasGroup.interactable = visible;
             canvasGroup.blocksRaycasts = visible;
         }
+        
+        if (buttonContainer != null)
+            buttonContainer.SetActive(visible);
     }
 
     private void UpdatePosition()

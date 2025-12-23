@@ -16,6 +16,7 @@ public class InteractionButtonController : MonoBehaviour
     
     private CityCenter currentCityCenter;
     private bool isActive = false;
+    private bool isSubscribed = false;
 
     private void Awake()
     {
@@ -28,18 +29,37 @@ public class InteractionButtonController : MonoBehaviour
         Debug.Log($"[ButtonController] Init - Button: {button != null}");
     }
 
+    private void Start()
+    {
+        SubscribeToEvents();
+    }
+
     private void OnEnable()
     {
+        SubscribeToEvents();
+    }
+
+    private void SubscribeToEvents()
+    {
+        if (isSubscribed) return;
+        
         GameEvents.OnCityCenterEnter += OnCityCenterEnter;
         GameEvents.OnCityCenterExit += OnCityCenterExit;
         GameEvents.OnProvincePanelClosed += OnPanelClosed;
+        
+        isSubscribed = true;
+        Debug.Log("[ButtonController] Subscribed to events");
     }
 
     private void OnDisable()
     {
+        if (!isSubscribed) return;
+        
         GameEvents.OnCityCenterEnter -= OnCityCenterEnter;
         GameEvents.OnCityCenterExit -= OnCityCenterExit;
         GameEvents.OnProvincePanelClosed -= OnPanelClosed;
+        
+        isSubscribed = false;
     }
 
     private void Update()

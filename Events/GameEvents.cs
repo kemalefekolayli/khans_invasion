@@ -121,7 +121,7 @@ public static class GameEvents
         OnProvinceManagementOpened?.Invoke(province);
     }
     
-    public static void ProvinceInteractionOpened(ProvinceModel province)
+    public static void ProvinceInteractionOpened(ProvinceModel province) // add the code to instantiate the interface
     {
         Debug.Log($">> Event: ProvinceInteractionOpened ({province?.provinceName})");
         OnProvinceInteractionOpened?.Invoke(province);
