@@ -26,12 +26,14 @@ public class EnemyProvinceButtons : MonoBehaviour
     {
         GameEvents.OnProvinceInteractionOpened += ShowButtons;
         GameEvents.OnProvincePanelClosed += HideButtons;
+        GameEvents.OnCityCenterExit += OnCityCenterExit;  // Yeni eklendi
     }
 
     private void OnDisable()
     {
         GameEvents.OnProvinceInteractionOpened -= ShowButtons;
         GameEvents.OnProvincePanelClosed -= HideButtons;
+        GameEvents.OnCityCenterExit -= OnCityCenterExit;  // Yeni eklendi
     }
 
     private void ShowButtons(ProvinceModel province)
@@ -56,6 +58,17 @@ public class EnemyProvinceButtons : MonoBehaviour
         
         if (siegeButton != null)
             siegeButton.gameObject.SetActive(false);
+    }
+
+    private void OnCityCenterExit(CityCenter cityCenter)
+    {
+        // At city center'dan çıkınca butonları kapat
+        if (currentProvince != null)
+        {
+            Debug.Log($"[EnemyButtons] Horse left city center, closing buttons");
+            HideButtons();
+            GameEvents.ProvincePanelClosed();
+        }
     }
 
     private void OnRaidClicked()
