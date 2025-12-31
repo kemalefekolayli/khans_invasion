@@ -36,11 +36,11 @@ public class GameManager : MonoBehaviour
     if (completeMapPrefab != null)
     {
         currentMap = Instantiate(completeMapPrefab);
-        Debug.Log("✓ Map prefab instantiated");
+        // Debug.Log("✓ Map prefab instantiated");
     }
     else
     {
-        Debug.LogError("CompleteMap prefab not assigned!");
+       // Debug.LogError("CompleteMap prefab not assigned!");
     }
 
     // Load player GUI
