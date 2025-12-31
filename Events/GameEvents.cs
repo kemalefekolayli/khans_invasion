@@ -117,11 +117,11 @@ public static class GameEvents
     // Province Interaction Events
     public static void ProvinceManagementOpened(ProvinceModel province)
     {
-        Debug.Log($">> Event: ProvinceManagementOpened ({province?.provinceName})");
+        Debug.Log($">> Event: ProvinceManagementOpened ({province?.provinceName})"); 
         OnProvinceManagementOpened?.Invoke(province);
     }
     
-    public static void ProvinceInteractionOpened(ProvinceModel province) // add the code to instantiate the interface
+    public static void ProvinceInteractionOpened(ProvinceModel province)
     {
         Debug.Log($">> Event: ProvinceInteractionOpened ({province?.provinceName})");
         OnProvinceInteractionOpened?.Invoke(province);
