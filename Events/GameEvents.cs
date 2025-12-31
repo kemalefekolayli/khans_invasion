@@ -42,6 +42,12 @@ public static class GameEvents
     public static event Action<ProvinceModel, string> OnBuildingConstructed;
     public static event Action<ProvinceModel, string> OnBuildingDestroyed;
     
+    // ===== ARMY EVENTS =====
+    
+    public static event Action<Army, General> OnArmySpawned;
+    public static event Action<Army> OnArmyDestroyed;
+    public static event Action<Army, General> OnArmyAssigned;
+    
     // ===== INVOKE METHODS =====
     
     public static void NationsLoaded()
@@ -144,5 +150,24 @@ public static class GameEvents
     {
         Debug.Log($">> Event: BuildingDestroyed ({buildingType} in {province?.provinceName})");
         OnBuildingDestroyed?.Invoke(province, buildingType);
+    }
+    
+    // Army Events
+    public static void ArmySpawned(Army army, General general)
+    {
+        Debug.Log($">> Event: ArmySpawned (Size: {army?.ArmySize} for {general?.GeneralName})");
+        OnArmySpawned?.Invoke(army, general);
+    }
+    
+    public static void ArmyDestroyed(Army army)
+    {
+        Debug.Log($">> Event: ArmyDestroyed");
+        OnArmyDestroyed?.Invoke(army);
+    }
+    
+    public static void ArmyAssigned(Army army, General general)
+    {
+        Debug.Log($">> Event: ArmyAssigned ({general?.GeneralName})");
+        OnArmyAssigned?.Invoke(army, general);
     }
 }
