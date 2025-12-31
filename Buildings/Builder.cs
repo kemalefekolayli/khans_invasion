@@ -45,9 +45,6 @@ public class Builder
         return 9999f;
     }
 
-    /// <summary>
-    /// Attempts to build a building. Returns the cost if successful, -1 if failed.
-    /// </summary>
     public float BuildBuilding(ProvinceModel province, string buildingType, float availableGold)
     {
         if (!CanBuild(province, buildingType, availableGold))

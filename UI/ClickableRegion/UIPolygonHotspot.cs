@@ -11,15 +11,55 @@ public class UIPolygonHotspot : MonoBehaviour, IPointerClickHandler, ICanvasRayc
     public static event Action<string> AnyRegionClicked;
 
     RectTransform rt;
-    private Builder builder;
+    
+    // Static references for building
+    private static Builder builder;
+    private static ProvinceModel currentProvince;
+    private static PlayerNation playerNation;
+    private static bool isSubscribed = false;
 
     void Awake()
     {
         rt = (RectTransform)transform;
-
+        
+        if (builder == null)
+            builder = new Builder();
+        
+        // Subscribe only once (static)
+        SubscribeToEvents();
     }
 
-    // 🔥 IMPORTANT: This makes UI raycasts respect the polygon shape
+    private static void SubscribeToEvents()
+    {
+        if (isSubscribed) return;
+        
+        GameEvents.OnProvinceManagementOpened += OnProvinceManagementOpened;
+        GameEvents.OnProvincePanelClosed += OnPanelClosed;
+        GameEvents.OnCityCenterExit += OnCityCenterExit;
+        
+        isSubscribed = true;
+        Debug.Log("[UIPolygonHotspot] Subscribed to events (static)");
+    }
+
+    private static void OnProvinceManagementOpened(ProvinceModel province)
+    {
+        currentProvince = province;
+        playerNation = PlayerNation.Instance;
+        Debug.Log($"[UIPolygonHotspot] Province set: {province.provinceName}");
+    }
+
+    private static void OnPanelClosed()
+    {
+        currentProvince = null;
+        Debug.Log("[UIPolygonHotspot] Province cleared (panel closed)");
+    }
+
+    private static void OnCityCenterExit(CityCenter cityCenter)
+    {
+        currentProvince = null;
+        Debug.Log("[UIPolygonHotspot] Province cleared (city center exit)");
+    }
+
     public bool IsRaycastLocationValid(Vector2 screenPoint, Camera eventCamera)
     {
         if (points == null || points.Count < 3) return false;
@@ -32,10 +72,53 @@ public class UIPolygonHotspot : MonoBehaviour, IPointerClickHandler, ICanvasRayc
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        // At this point, we already KNOW it's inside polygon (because of the filter),
-        // but keeping it safe is fine.
         AnyRegionClicked?.Invoke(regionId);
-        Debug.Log("Clicked region: " + regionId);
+        Debug.Log($"Clicked region: {regionId}, currentProvince: {(currentProvince != null ? currentProvince.provinceName : "NULL")}");
+        
+        // Build based on region ID
+        string buildingType = regionId switch
+        {
+            "1" => "Farm",
+            "2" => "Barracks",
+            "3" => "Fortress",
+            "4" => "Housing",
+            "5" => "Trade_Building",
+            _ => null
+        };
+        
+        if (buildingType != null)
+        {
+            TryBuild(buildingType);
+        }
+    }
+
+    private void TryBuild(string buildingType)
+    {
+        if (currentProvince == null)
+        {
+            Debug.LogWarning("[UIPolygonHotspot] No province selected!");
+            return;
+        }
+        
+        if (playerNation == null)
+        {
+            playerNation = PlayerNation.Instance;
+            if (playerNation == null)
+            {
+                Debug.LogWarning("[UIPolygonHotspot] PlayerNation not found!");
+                return;
+            }
+        }
+        
+        float cost = builder.BuildBuilding(currentProvince, buildingType, playerNation.nationMoney);
+        
+        if (cost > 0)
+        {
+            playerNation.nationMoney -= cost;
+            playerNation.RecalculateStats();
+            GameEvents.PlayerStatsChanged();
+            Debug.Log($"[UIPolygonHotspot] Built {buildingType} in {currentProvince.provinceName}");
+        }
     }
 
     static bool PointInPolygon(Vector2 p, List<Vector2> poly)
