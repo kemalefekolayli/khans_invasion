@@ -1,68 +1,85 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.Events;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using System.Collections.Generic;
 
-public class ColliderButton : MonoBehaviour
+public class UIPolygonButton : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
-    [Header("Events")]
-    public UnityEvent onClick;
+    [Header("Polygon Points (normalized 0-1)")]
+    public Vector2[] normalizedPoints;
     
-    [Header("Visual Feedback")]
-    public SpriteRenderer spriteRenderer;
+    [Header("Events")]
+    public UnityEngine.Events.UnityEvent onClick;
+    
+    [Header("Visual")]
+    public Image targetImage;
     public Color normalColor = Color.white;
     public Color hoverColor = Color.yellow;
     
-    private Camera mainCam;
-    private bool isHovered = false;
+    private RectTransform rectTransform;
 
-    void Start()
+    void Awake()
     {
-        mainCam = Camera.main;
-        if (spriteRenderer == null)
-            spriteRenderer = GetComponent<SpriteRenderer>();
-        
-        Debug.Log($"[ColliderButton] {gameObject.name} initialized. Collider: {GetComponent<Collider2D>() != null}");
+        rectTransform = GetComponent<RectTransform>();
+        if (targetImage == null)
+            targetImage = GetComponent<Image>();
     }
 
-    void Update()
+    public void OnPointerClick(PointerEventData eventData)
     {
-        if (Mouse.current == null) return;
-        
-        Vector2 mouseScreen = Mouse.current.position.ReadValue();
-        Vector2 mouseWorld = mainCam.ScreenToWorldPoint(mouseScreen);
-        
-        // Her frame logla (test için)
-        if (Mouse.current.leftButton.wasPressedThisFrame)
+        if (IsInsidePolygon(eventData))
         {
-            Debug.Log($"[ColliderButton] Click at screen: {mouseScreen}, world: {mouseWorld}");
-            
-            // Tüm collider'ları kontrol et
-            Collider2D[] hits = Physics2D.OverlapPointAll(mouseWorld);
-            Debug.Log($"[ColliderButton] Found {hits.Length} colliders at click point");
-            
-            foreach (var hit in hits)
-            {
-                Debug.Log($"  - {hit.gameObject.name}");
-            }
-        }
-        
-        // Hover check
-        Collider2D hit2 = Physics2D.OverlapPoint(mouseWorld);
-        bool nowHovered = (hit2 != null && hit2.gameObject == gameObject);
-        
-        if (nowHovered != isHovered)
-        {
-            isHovered = nowHovered;
-            Debug.Log($"[ColliderButton] Hover changed: {isHovered}");
-            if (spriteRenderer != null)
-                spriteRenderer.color = isHovered ? hoverColor : normalColor;
-        }
-        
-        // Click check
-        if (isHovered && Mouse.current.leftButton.wasPressedThisFrame)
-        {
-            Debug.Log($"[ColliderButton] {gameObject.name} CLICKED!");
+            Debug.Log($"[UIPolygonButton] {gameObject.name} CLICKED!");
             onClick?.Invoke();
         }
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (targetImage != null)
+            targetImage.color = hoverColor;
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        if (targetImage != null)
+            targetImage.color = normalColor;
+    }
+
+    private bool IsInsidePolygon(PointerEventData eventData)
+    {
+        if (normalizedPoints == null || normalizedPoints.Length < 3)
+            return true;
+        
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            rectTransform, eventData.position, eventData.pressEventCamera, out Vector2 localPoint);
+        
+        // Local point'i normalize et (0-1 aralığına)
+        Rect rect = rectTransform.rect;
+        Vector2 normalized = new Vector2(
+            (localPoint.x - rect.x) / rect.width,
+            (localPoint.y - rect.y) / rect.height
+        );
+        
+        return IsPointInPolygon(normalized, normalizedPoints);
+    }
+
+    private bool IsPointInPolygon(Vector2 point, Vector2[] polygon)
+    {
+        bool inside = false;
+        int j = polygon.Length - 1;
+        
+        for (int i = 0; i < polygon.Length; i++)
+        {
+            if ((polygon[i].y < point.y && polygon[j].y >= point.y ||
+                 polygon[j].y < point.y && polygon[i].y >= point.y) &&
+                (polygon[i].x + (point.y - polygon[i].y) / (polygon[j].y - polygon[i].y) * 
+                (polygon[j].x - polygon[i].x) < point.x))
+            {
+                inside = !inside;
+            }
+            j = i;
+        }
+        return inside;
     }
 }
