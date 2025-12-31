@@ -7,6 +7,7 @@ using UnityEngine;
 /// </summary>
 public static class GameEvents
 {
+
     // ===== INITIALIZATION EVENTS =====
     
     public static event Action OnNationsLoaded;
@@ -47,7 +48,11 @@ public static class GameEvents
     public static event Action<Army, General> OnArmySpawned;
     public static event Action<Army> OnArmyDestroyed;
     public static event Action<Army, General> OnArmyAssigned;
+
+    // ===== TROOP LEVEL EVENTS =====
     
+    public static event System.Action<TroopLevel, int, int> OnTroopLevelUp;  // troopLevel, fromLevel, toLevel
+    public static event System.Action<TroopLevel> OnTroopMaxLevel;  
     // ===== INVOKE METHODS =====
     
     public static void NationsLoaded()
@@ -169,5 +174,24 @@ public static class GameEvents
     {
         Debug.Log($">> Event: ArmyAssigned ({general?.GeneralName})");
         OnArmyAssigned?.Invoke(army, general);
+    }
+
+    // Troop Level Events
+    public static void TroopLevelUp(TroopLevel troop, int fromLevel, int toLevel)
+    {
+        Debug.Log($">> Event: TroopLevelUp ({fromLevel} -> {toLevel})");
+        OnTroopLevelUp?.Invoke(troop, fromLevel, toLevel);
+        
+        // Also fire max level event if applicable
+        if (toLevel >= TroopLevelData.MAX_LEVEL)
+        {
+            TroopMaxLevel(troop);
+        }
+    }
+    
+    public static void TroopMaxLevel(TroopLevel troop)
+    {
+        Debug.Log($">> Event: TroopMaxLevel (GOLDEN!)");
+        OnTroopMaxLevel?.Invoke(troop);
     }
 }
