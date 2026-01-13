@@ -7,9 +7,7 @@ using UnityEngine;
 /// </summary>
 public static class GameEvents
 {
-
-    // ===== ADD TO EVENT DECLARATIONS SECTION =====
-    // (around line 12, after OnMapLoaded)
+    
     public static event Action OnProvinceDataLoaded;
     // ===== INITIALIZATION EVENTS =====
     

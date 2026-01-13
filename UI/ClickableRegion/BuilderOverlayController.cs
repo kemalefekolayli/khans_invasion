@@ -16,12 +16,12 @@ public class BuilderOverlayController : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log("[BuilderOverlay] Awake called");
+ 
     }
 
     private void OnEnable()
     {
-        Debug.Log("[BuilderOverlay] OnEnable - subscribing to events");
+
         GameEvents.OnProvinceManagementOpened += OnProvinceOpened;
         GameEvents.OnProvincePanelClosed += OnPanelClosed;
         GameEvents.OnBuildingConstructed += OnBuildingConstructed;
@@ -30,7 +30,7 @@ public class BuilderOverlayController : MonoBehaviour
 
     private void OnDisable()
     {
-        Debug.Log("[BuilderOverlay] OnDisable - unsubscribing");
+
         GameEvents.OnProvinceManagementOpened -= OnProvinceOpened;
         GameEvents.OnProvincePanelClosed -= OnPanelClosed;
         GameEvents.OnBuildingConstructed -= OnBuildingConstructed;
@@ -39,34 +39,34 @@ public class BuilderOverlayController : MonoBehaviour
 
     private void Start()
     {
-        Debug.Log($"[BuilderOverlay] Start - overlay_farm assigned: {overlay_farm != null}");
+
         HideAllOverlays();
     }
 
     private void OnProvinceOpened(ProvinceModel province)
     {
-        Debug.Log($"[BuilderOverlay] Province opened: {province.provinceName}, buildings: {province.buildings.Count}");
+
         currentProvince = province;
         UpdateOverlays();
     }
 
     private void OnPanelClosed()
     {
-        Debug.Log("[BuilderOverlay] Panel closed");
+
         currentProvince = null;
         HideAllOverlays();
     }
 
     private void OnCityCenterExit(CityCenter cityCenter)
     {
-        Debug.Log("[BuilderOverlay] CityCenter exit");
+
         currentProvince = null;
         HideAllOverlays();
     }
 
     private void OnBuildingConstructed(ProvinceModel province, string buildingType)
     {
-        Debug.Log($"[BuilderOverlay] Building constructed: {buildingType}, is current: {province == currentProvince}");
+
         if (province == currentProvince)
             UpdateOverlays();
     }
@@ -77,7 +77,6 @@ public class BuilderOverlayController : MonoBehaviour
         
         if (currentProvince == null) return;
 
-        Debug.Log($"[BuilderOverlay] Updating overlays for {currentProvince.buildings.Count} buildings");
         
         foreach (string building in currentProvince.buildings)
         {
@@ -128,7 +127,7 @@ public class BuilderOverlayController : MonoBehaviour
         if (obj != null)
         {
             obj.SetActive(active);
-            Debug.Log($"[BuilderOverlay] Set {obj.name} active: {active}");
+
         }
         else
         {
