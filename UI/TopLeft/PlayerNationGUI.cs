@@ -1,47 +1,65 @@
 using UnityEngine;
 using TMPro;
 
+/// <summary>
+/// Displays player nation stats with current + pending format.
+/// Shows what you have now and what you'll gain next turn.
+/// Example: "150 +23" means 150 gold now, +23 coming next turn.
+/// </summary>
 public class PlayerNationGUI : MonoBehaviour
 {
     [Header("Text References")]
     public TextMeshProUGUI nationNameText;
-    public TextMeshProUGUI taxText;
-    public TextMeshProUGUI tradeText;
-    public TextMeshProUGUI armySizeText;
-    public TextMeshProUGUI armyStrText;
-    public TextMeshProUGUI cityCountText;
-    public TextMeshProUGUI turnCountText;
+    public TextMeshProUGUI goldText;        // Current gold + income
+    public TextMeshProUGUI taxText;         // Tax income per turn  
+    public TextMeshProUGUI tradeText;       // Trade income per turn
+    public TextMeshProUGUI populationText;  // Total population
+    public TextMeshProUGUI armySizeText;    // Army size
+    public TextMeshProUGUI armyStrText;     // Army strength
+    public TextMeshProUGUI cityCountText;   // Number of cities
+    public TextMeshProUGUI turnCountText;   // Current turn
+    
+    [Header("Display Settings")]
+    public bool showPendingIncome = true;   // Show "+X" next to current values
+    public Color pendingIncomeColor = new Color(0.4f, 0.9f, 0.4f); // Green for positive
+    public Color pendingLossColor = new Color(0.9f, 0.4f, 0.4f);   // Red for negative
     
     [Header("References")]
     public PlayerNation playerNation;
+    
+    // Cached values for comparison
+    private float lastGold;
+    private float lastTax;
+    private float lastTrade;
 
     private void OnEnable()
     {
-        // Subscribe to events
         GameEvents.OnPlayerNationReady += OnPlayerNationReady;
         GameEvents.OnPlayerStatsChanged += OnPlayerStatsChanged;
         GameEvents.OnPlayerNationChanged += OnPlayerNationChanged;
         GameEvents.OnTurnEnded += OnTurnEnded;
+        GameEvents.OnBuildingConstructed += OnBuildingConstructed;
+        GameEvents.OnProvinceOwnerChanged += OnProvinceOwnerChanged;
     }
 
     private void OnDisable()
     {
-        // Unsubscribe from events
         GameEvents.OnPlayerNationReady -= OnPlayerNationReady;
         GameEvents.OnPlayerStatsChanged -= OnPlayerStatsChanged;
         GameEvents.OnPlayerNationChanged -= OnPlayerNationChanged;
         GameEvents.OnTurnEnded -= OnTurnEnded;
+        GameEvents.OnBuildingConstructed -= OnBuildingConstructed;
+        GameEvents.OnProvinceOwnerChanged -= OnProvinceOwnerChanged;
     }
 
     private void Start()
     {
-        // Auto-find text components
         FindTextReferences();
     }
 
     private void OnPlayerNationReady()
     {
-        // Player nation is ready, update GUI
+        CacheCurrentValues();
         UpdateGUI();
     }
 
@@ -52,12 +70,43 @@ public class PlayerNationGUI : MonoBehaviour
 
     private void OnPlayerNationChanged(NationModel newNation)
     {
+        CacheCurrentValues();
         UpdateGUI();
     }
 
     private void OnTurnEnded(int newTurn)
     {
+        // After turn ends, cache new values as baseline
+        CacheCurrentValues();
         UpdateGUI();
+    }
+    
+    private void OnBuildingConstructed(ProvinceModel province, string buildingType)
+    {
+        // Recalculate when buildings change income
+        if (playerNation != null)
+        {
+            playerNation.RecalculateStats();
+        }
+        UpdateGUI();
+    }
+    
+    private void OnProvinceOwnerChanged(ProvinceModel province, NationModel oldOwner, NationModel newOwner)
+    {
+        if (playerNation != null)
+        {
+            playerNation.RecalculateStats();
+        }
+        UpdateGUI();
+    }
+
+    private void CacheCurrentValues()
+    {
+        if (playerNation == null) return;
+        
+        lastGold = playerNation.nationMoney;
+        lastTax = playerNation.TaxIncome;
+        lastTrade = playerNation.TradeIncome;
     }
 
     private void FindTextReferences()
@@ -65,11 +114,17 @@ public class PlayerNationGUI : MonoBehaviour
         if (nationNameText == null)
             nationNameText = FindTextByName("NationNameText");
         
+        if (goldText == null)
+            goldText = FindTextByName("GoldText");
+        
         if (taxText == null)
             taxText = FindTextByName("TaxText");
         
         if (tradeText == null)
             tradeText = FindTextByName("TradeText");
+        
+        if (populationText == null)
+            populationText = FindTextByName("PopulationText");
         
         if (armySizeText == null)
             armySizeText = FindTextByName("ArmySizeText");
@@ -86,7 +141,6 @@ public class PlayerNationGUI : MonoBehaviour
 
     private TextMeshProUGUI FindTextByName(string name)
     {
-        // Search in children first
         TextMeshProUGUI[] texts = GetComponentsInChildren<TextMeshProUGUI>(true);
         foreach (var text in texts)
         {
@@ -94,7 +148,6 @@ public class PlayerNationGUI : MonoBehaviour
                 return text;
         }
         
-        // Search in entire scene
         GameObject obj = GameObject.Find(name);
         if (obj != null)
         {
@@ -106,7 +159,6 @@ public class PlayerNationGUI : MonoBehaviour
 
     public void UpdateGUI()
     {
-        // Try to find PlayerNation if not assigned
         if (playerNation == null)
         {
             playerNation = PlayerNation.Instance ?? FindFirstObjectByType<PlayerNation>();
@@ -115,43 +167,124 @@ public class PlayerNationGUI : MonoBehaviour
                 return;
         }
         
-        // Check if player has a nation assigned
         if (playerNation.currentNation == null)
             return;
         
-        // Update all text fields using the properties
+        // Nation name
         if (nationNameText != null)
             nationNameText.text = playerNation.NationName;
         
+        // Gold with pending income
+        if (goldText != null)
+        {
+            float totalIncome = playerNation.TotalIncome;
+            goldText.text = FormatWithPending(playerNation.nationMoney, totalIncome);
+        }
+        
+        // Tax - show current + change from start of turn
         if (taxText != null)
-            taxText.text = FormatNumber(playerNation.TaxIncome);
+        {
+            float taxChange = playerNation.TaxIncome - lastTax;
+            if (showPendingIncome && Mathf.Abs(taxChange) > 0.01f)
+            {
+                taxText.text = FormatWithChange(playerNation.TaxIncome, taxChange);
+            }
+            else
+            {
+                taxText.text = FormatNumber(playerNation.TaxIncome);
+            }
+        }
         
+        // Trade - show current + change from start of turn
         if (tradeText != null)
-            tradeText.text = FormatNumber(playerNation.TradeIncome);
+        {
+            float tradeChange = playerNation.TradeIncome - lastTrade;
+            if (showPendingIncome && Mathf.Abs(tradeChange) > 0.01f)
+            {
+                tradeText.text = FormatWithChange(playerNation.TradeIncome, tradeChange);
+            }
+            else
+            {
+                tradeText.text = FormatNumber(playerNation.TradeIncome);
+            }
+        }
         
+        // Population
+        if (populationText != null)
+            populationText.text = FormatNumber(playerNation.PopulationSize);
+        
+        // Army size
         if (armySizeText != null)
             armySizeText.text = FormatNumber(playerNation.ArmySize);
         
+        // Army strength
         if (armyStrText != null)
             armyStrText.text = FormatNumber(playerNation.ArmyStrength);
         
+        // City count
         if (cityCountText != null)
             cityCountText.text = playerNation.CityCount.ToString();
         
+        // Turn count
         if (turnCountText != null)
             turnCountText.text = $"Turn {playerNation.currentTurn}";
-        
-        Debug.Log($"GUI Updated: {playerNation.NationName}, Cities: {playerNation.CityCount}");
     }
 
-    // Format large numbers nicely (e.g., 1500 -> "1.5K")
+    /// <summary>
+    /// Format: "150 +23" where 150 is current and +23 is pending
+    /// </summary>
+    private string FormatWithPending(float current, float pending)
+    {
+        string currentStr = FormatNumber(current);
+        
+        if (!showPendingIncome || Mathf.Abs(pending) < 0.01f)
+            return currentStr;
+        
+        string sign = pending >= 0 ? "+" : "";
+        string pendingStr = FormatNumber(pending);
+        string colorHex = pending >= 0 ? ColorUtility.ToHtmlStringRGB(pendingIncomeColor) 
+                                       : ColorUtility.ToHtmlStringRGB(pendingLossColor);
+        
+        return $"{currentStr} <color=#{colorHex}>{sign}{pendingStr}</color>";
+    }
+    
+    /// <summary>
+    /// Format: "23 (+5)" where 23 is current value and +5 is change since turn start
+    /// </summary>
+    private string FormatWithChange(float current, float change)
+    {
+        string currentStr = FormatNumber(current);
+        
+        if (Mathf.Abs(change) < 0.01f)
+            return currentStr;
+        
+        string sign = change >= 0 ? "+" : "";
+        string changeStr = FormatNumber(Mathf.Abs(change));
+        string colorHex = change >= 0 ? ColorUtility.ToHtmlStringRGB(pendingIncomeColor) 
+                                      : ColorUtility.ToHtmlStringRGB(pendingLossColor);
+        
+        return $"{currentStr} <color=#{colorHex}>({sign}{changeStr})</color>";
+    }
+
+    /// <summary>
+    /// Format large numbers nicely (e.g., 1500 -> "1.5K")
+    /// </summary>
     private string FormatNumber(float value)
     {
-        if (value >= 1000000)
+        if (Mathf.Abs(value) >= 1000000)
             return $"{value / 1000000f:F1}M";
-        else if (value >= 1000)
+        else if (Mathf.Abs(value) >= 1000)
             return $"{value / 1000f:F1}K";
         else
             return $"{value:F0}";
+    }
+    
+    /// <summary>
+    /// Call this to refresh the baseline values (e.g., after loading a save)
+    /// </summary>
+    public void ResetBaseline()
+    {
+        CacheCurrentValues();
+        UpdateGUI();
     }
 }

@@ -8,6 +8,9 @@ using UnityEngine;
 public static class GameEvents
 {
 
+    // ===== ADD TO EVENT DECLARATIONS SECTION =====
+    // (around line 12, after OnMapLoaded)
+    public static event Action OnProvinceDataLoaded;
     // ===== INITIALIZATION EVENTS =====
     
     public static event Action OnNationsLoaded;
@@ -49,6 +52,11 @@ public static class GameEvents
     public static event Action<Army> OnArmyDestroyed;
     public static event Action<Army, General> OnArmyAssigned;
 
+    public static void ProvinceDataLoaded()
+{
+    Debug.Log(">> Event: ProvinceDataLoaded");
+    OnProvinceDataLoaded?.Invoke();
+}
     // ===== TROOP LEVEL EVENTS =====
     
     public static event System.Action<TroopLevel, int, int> OnTroopLevelUp;  // troopLevel, fromLevel, toLevel
