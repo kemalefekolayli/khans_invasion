@@ -13,8 +13,29 @@ public class CityCenter : MonoBehaviour
     [Header("Debug")]
     public bool enableDebugLogs = true;
 
+    [Header("Icons")]
+    [SerializeField] private GameObject barrackIcon;
+    [SerializeField] private GameObject farmIcon;
+    [SerializeField] private GameObject houseIcon;
+    [SerializeField] private GameObject tradeIcon;
+    [SerializeField] private GameObject fortIcon;
     public ProvinceModel Province => province;
 
+    void OnEnable()
+    {
+        GameEvents.OnBuildingConstructed += OnBuildingConstructed;
+    }
+    void OnDisable()
+    {
+        GameEvents.OnBuildingConstructed -= OnBuildingConstructed;
+    }
+    private void OnBuildingConstructed(ProvinceModel prov, string buildingType)
+    {
+        if (prov == province)
+        {
+            SetBuildingOverlay(buildingType, true);
+        }
+    }
     private void Awake()
     {
 
@@ -30,8 +51,7 @@ public class CityCenter : MonoBehaviour
 
         // Set tag for detection
         gameObject.tag = "CityCenter";
-
-  
+        UpdateIcons();
 
     }
 
@@ -99,18 +119,43 @@ public class CityCenter : MonoBehaviour
         }
     }
     
-    private void DebugLog(string message)
+    private void UpdateIcons()
     {
-        if (enableDebugLogs)
+
+        foreach (string building in province.buildings)
         {
-            Debug.Log($"[CityCenter:{gameObject.name}] {message}");
+            SetBuildingOverlay(building, true);
         }
     }
-    
-    // Draw gizmo in editor to visualize detection radius
-    private void OnDrawGizmosSelected()
+
+    private void SetBuildingOverlay(string buildingType, bool active)
     {
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position, detectionRadius);
+        switch (buildingType)
+        {
+            case "Farm":
+                SetActive(farmIcon, active);
+                break;
+            case "Barracks":
+                SetActive(barrackIcon, active);
+                break;
+            case "Fortress":
+                SetActive(fortIcon, active);
+                break;
+            case "Housing":
+                SetActive(houseIcon, active);
+                break;
+            case "Trade_Building":
+                SetActive(tradeIcon, active);
+                break;
+        }
+    }
+
+     private void SetActive(GameObject obj, bool active)
+    {
+        if (obj != null)
+        {
+            obj.SetActive(active);
+
+        }
     }
 }
