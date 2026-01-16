@@ -38,7 +38,8 @@ public class ProvinceModel : MonoBehaviour
        CityCenter cityCenter = GetComponentInChildren<CityCenter>();
          if (cityCenter != null && capitalProvince == this)
          {
-              cityCenter.SwitchSprites();
+            Debug.Log($"[ProvinceModel] 1234 Switching sprites for capital province: {provinceName}");
+            cityCenter.SwitchSprites();
          }
     }
     private void Awake()

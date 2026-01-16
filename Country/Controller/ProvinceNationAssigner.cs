@@ -18,6 +18,8 @@ public class ProvinceAssignmentWrapper
 
 public class ProvinceNationAssigner : MonoBehaviour
 {
+    public static ProvinceNationAssigner Instance { get; private set; }
+    
     [Header("References")]
     public NationLoader nationLoader;
 
@@ -27,6 +29,19 @@ public class ProvinceNationAssigner : MonoBehaviour
     private Dictionary<int, ProvinceModel> provincesById = new Dictionary<int, ProvinceModel>();
     private bool nationsReady = false;
     private bool mapReady = false;
+    private bool assignmentComplete = false;  // Guard against duplicate execution
+
+    void Awake()
+    {
+        // Singleton pattern - destroy duplicate instances
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("[ProvinceNationAssigner] Duplicate instance destroyed!");
+            Destroy(this);
+            return;
+        }
+        Instance = this;
+    }
 
     void OnEnable()
     {
@@ -70,9 +85,11 @@ public class ProvinceNationAssigner : MonoBehaviour
     private void TryAssignProvinces()
     {
         // Only proceed when both nations and map are ready
-        Debug.Log($"TryAssignProvinces: nationsReady={nationsReady}, mapReady={mapReady}");
+        Debug.Log($"TryAssignProvinces: nationsReady={nationsReady}, mapReady={mapReady}, assignmentComplete={assignmentComplete}");
         if (!nationsReady || !mapReady) return;
+        if (assignmentComplete) return;  // NEW: Prevent duplicate execution
         
+        assignmentComplete = true;  // NEW: Mark as complete before running
         AssignProvinces();
     }
 

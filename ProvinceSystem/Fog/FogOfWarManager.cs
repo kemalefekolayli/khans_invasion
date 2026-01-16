@@ -14,6 +14,7 @@ public class FogOfWarManager : MonoBehaviour
     
     private Dictionary<ProvinceModel, FogState> provinceFogStates = new Dictionary<ProvinceModel, FogState>();
     private HashSet<ProvinceModel> discoveredProvinces = new HashSet<ProvinceModel>();
+    private bool fogInitialized = false;  // NEW: Guard against duplicate initialization
 
     private class FogState
     {
@@ -37,6 +38,12 @@ public class FogOfWarManager : MonoBehaviour
 
     private void OnProvincesAssigned()
     {
+        if (fogInitialized)  // NEW: Prevent duplicate initialization
+        {
+            Debug.Log("[FogOfWarManager] Already initialized, skipping duplicate call.");
+            return;
+        }
+        fogInitialized = true;  // NEW: Mark as initialized
         StartCoroutine(InitializeFog());
     }
 
@@ -46,27 +53,63 @@ public class FogOfWarManager : MonoBehaviour
         
         ProvinceModel[] allProvinces = FindObjectsByType<ProvinceModel>(FindObjectsSortMode.None);
         
+        // Get player nation reference
+        PlayerNation playerNation = PlayerNation.Instance;
+        NationModel playerNationModel = playerNation?.currentNation;
+        
+        int foggedCount = 0;
+        int playerOwnedCount = 0;
+        
         foreach (var province in allProvinces)
         {
             if (province.CompareTag("River")) continue;
             if (province.spriteRenderer == null) continue;
             
-            // Store original target color and set to fog
+            // Store original target color
             Color nationColor = GetNationColor(province);
             
-            provinceFogStates[province] = new FogState
-            {
-                province = province,
-                targetColor = nationColor,
-                isRevealing = false,
-                isBorderPeek = false
-            };
+            // Check if province is owned by player - auto-discover it
+            bool isPlayerOwned = (playerNationModel != null && province.provinceOwner == playerNationModel);
             
-            // Set initial fog color
-            province.spriteRenderer.color = fogColor;
+            if (isPlayerOwned)
+            {
+                // Player-owned provinces start revealed
+                discoveredProvinces.Add(province);
+                playerOwnedCount++;
+                
+                provinceFogStates[province] = new FogState
+                {
+                    province = province,
+                    targetColor = nationColor,
+                    isRevealing = true,  // Already revealing
+                    isBorderPeek = false
+                };
+                
+                // Keep nation color (no fog)
+                province.spriteRenderer.color = nationColor;
+            }
+            else
+            {
+                // Non-player provinces start fogged
+                foggedCount++;
+                
+                provinceFogStates[province] = new FogState
+                {
+                    province = province,
+                    targetColor = nationColor,
+                    isRevealing = false,
+                    isBorderPeek = false
+                };
+                
+                // Set initial fog color
+                province.spriteRenderer.color = fogColor;
+            }
         }
         
-        Debug.Log($"✓ FogOfWar initialized for {provinceFogStates.Count} provinces");
+        // After setting up player provinces, update adjacent provinces to border peek
+        UpdateAdjacentProvinces();
+        
+        Debug.Log($"✓ FogOfWar initialized: {playerOwnedCount} player provinces revealed, {foggedCount} provinces fogged");
     }
 
     private Color GetNationColor(ProvinceModel province)

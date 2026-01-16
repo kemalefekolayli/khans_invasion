@@ -38,14 +38,14 @@ public class UIPolygonHotspot : MonoBehaviour, IPointerClickHandler, ICanvasRayc
         GameEvents.OnCityCenterExit += OnCityCenterExit;
         
         isSubscribed = true;
-        Debug.Log("[UIPolygonHotspot] Subscribed to events (static)");
+        
     }
 
     private static void OnProvinceManagementOpened(ProvinceModel province)
     {
         currentProvince = province;
         playerNation = PlayerNation.Instance;
-        Debug.Log($"[UIPolygonHotspot] Province set: {province.provinceName}");
+        
     }
 
     private static void OnPanelClosed()

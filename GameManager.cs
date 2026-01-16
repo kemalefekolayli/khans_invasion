@@ -18,10 +18,24 @@ public class GameManager : MonoBehaviour
     [Header("Kamera")]
     public CameraController cameraController;
     
+    [Header("Capital Settings")]
+    public string capitalProvinceObjectName = "Province_104";
+    
     private GameObject currentMap;
     private GameObject horse;
     private GameObject currentGUI;
     private GameObject interactionGUI;
+
+    void OnEnable()
+    {
+        // Subscribe to PlayerNationReady to set capital at the right time
+        GameEvents.OnPlayerNationReady += OnPlayerNationReady;
+    }
+
+    void OnDisable()
+    {
+        GameEvents.OnPlayerNationReady -= OnPlayerNationReady;
+    }
 
     void Start()
     {
@@ -33,55 +47,75 @@ public class GameManager : MonoBehaviour
 
     public void LoadMap()
     {
-    // Load the map prefab
-    if (completeMapPrefab != null)
-    {
-        currentMap = Instantiate(completeMapPrefab);
-        Debug.Log("✓ Map prefab instantiated");
-    }
-    else
-    {
-       Debug.LogError("CompleteMap prefab not assigned!");
-    }
-    
-    // Load player GUI
-    if (topLeftGUIPrefab != null)
-    {
-        currentGUI = Instantiate(topLeftGUIPrefab);
-        Debug.Log("✓ GUI prefab instantiated");
-    }
-    
-    // Spawn horse AFTER map
-    if (horsePrefab != null && currentMap != null)
-    {
-        Transform startPosTransform = currentMap.transform.Find("Province_104");
+        // Load the map prefab
+        if (completeMapPrefab != null)
+        {
+            currentMap = Instantiate(completeMapPrefab);
+        }
+        // Load player GUI
+        if (topLeftGUIPrefab != null)
+        {
+            currentGUI = Instantiate(topLeftGUIPrefab);
+
+        }
         
-        if (startPosTransform != null)
+        // Spawn horse AFTER map
+        if (horsePrefab != null && currentMap != null)
         {
-            // Use world position, not local
-            Vector3 horseStartPosition = startPosTransform.position;
+            Transform startPosTransform = currentMap.transform.Find(capitalProvinceObjectName);
             
-            // Spawn with identity rotation, NOT as child of map
-            horse = Instantiate(horsePrefab, horseStartPosition, Quaternion.identity);
-            
-            // camera location setting 
-            cameraController.SetCameraPosition(horse.transform.position);
-            interactionGUI = Instantiate(interactionButtonPrefab);
-            Debug.Log($"✓ Horse spawned at {horseStartPosition}");
+            if (startPosTransform != null)
+            {
+                // Use world position, not local
+                Vector3 horseStartPosition = startPosTransform.position;
+                
+                // Spawn with identity rotation, NOT as child of map
+                horse = Instantiate(horsePrefab, horseStartPosition, Quaternion.identity);
+                
+                // camera location setting 
+                cameraController.SetCameraPosition(horse.transform.position);
+                interactionGUI = Instantiate(interactionButtonPrefab);
+            }
         }
-        else
-        {
-            Debug.LogError("Province_104 not found in map!");
-        }
-    }
-    // set the capital to province 104
-    nationController.SetNationCapital(PlayerNation.Instance.currentNation, currentMap.transform.Find("Province_104").GetComponent<ProvinceModel>());
-    // Fire event - map is loaded
-    Invoke(nameof(FireMapLoadedEvent), 0.5f);
+        
+        Invoke(nameof(FireMapLoadedEvent), 0.5f);
     }
 
     private void FireMapLoadedEvent()
     {
         GameEvents.MapLoaded();
+    }
+
+    private void OnPlayerNationReady()
+    {
+        SetPlayerCapital();
+    }
+
+    private void SetPlayerCapital()
+    {
+        if (currentMap == null)
+        {
+            return;
+        }
+
+        if (PlayerNation.Instance == null || PlayerNation.Instance.currentNation == null)
+        {
+            return;
+        }
+
+        Transform capitalTransform = currentMap.transform.Find(capitalProvinceObjectName);
+        if (capitalTransform == null)
+        {
+            return;
+        }
+
+        ProvinceModel capitalProvince = capitalTransform.GetComponent<ProvinceModel>();
+        if (capitalProvince == null)
+        {
+            return;
+        }
+        // Now PlayerNation.currentNation is guaranteed to be set
+        nationController.SetNationCapital(PlayerNation.Instance.currentNation, capitalProvince);
+
     }
 }
