@@ -29,7 +29,6 @@ public class Horse : MonoBehaviour, IProvinceDetector
         if (spriteRenderer == null)
             spriteRenderer = GetComponent<SpriteRenderer>();
     }
-
     private void Update()
     {
         if (Keyboard.current == null) return;

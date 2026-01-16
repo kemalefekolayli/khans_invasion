@@ -28,6 +28,7 @@ public class ProvinceModel : MonoBehaviour
     {
         GameEvents.OnPlayerNationCapitalSet += SwitchSprites;
     }
+
     void OnDisable()
     {
         GameEvents.OnPlayerNationCapitalSet -= SwitchSprites;
@@ -90,7 +91,10 @@ public class ProvinceModel : MonoBehaviour
         collider.isTrigger = true;  
     }
 
-
+    public Vector3 GetProvincePosition()
+    {
+        return transform.position;
+    }
     public void SetNationColor(Color nationColor)
     {
         provinceColor = nationColor;
