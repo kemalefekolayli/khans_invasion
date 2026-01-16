@@ -11,13 +11,11 @@ public class BuilderOverlayController : MonoBehaviour
     [SerializeField] private GameObject overlay_house;
     [SerializeField] private GameObject overlay_house2;
     [SerializeField] private GameObject overlay_trade;
+    [Header("Barrack Menu")]
+    [SerializeField] private GameObject barrackButton;
+
 
     private ProvinceModel currentProvince;
-
-    private void Awake()
-    {
- 
-    }
 
     private void OnEnable()
     {
@@ -26,6 +24,7 @@ public class BuilderOverlayController : MonoBehaviour
         GameEvents.OnProvincePanelClosed += OnPanelClosed;
         GameEvents.OnBuildingConstructed += OnBuildingConstructed;
         GameEvents.OnCityCenterExit += OnCityCenterExit;
+        GameEvents.OnBarrackMenuOpened += OnBarrackMenuOpened;
     }
 
     private void OnDisable()
@@ -35,31 +34,28 @@ public class BuilderOverlayController : MonoBehaviour
         GameEvents.OnProvincePanelClosed -= OnPanelClosed;
         GameEvents.OnBuildingConstructed -= OnBuildingConstructed;
         GameEvents.OnCityCenterExit -= OnCityCenterExit;
+        GameEvents.OnBarrackMenuOpened -= OnBarrackMenuOpened;
     }
 
     private void Start()
     {
-
         HideAllOverlays();
     }
 
     private void OnProvinceOpened(ProvinceModel province)
     {
-
         currentProvince = province;
         UpdateOverlays();
     }
 
     private void OnPanelClosed()
     {
-
         currentProvince = null;
         HideAllOverlays();
     }
 
     private void OnCityCenterExit(CityCenter cityCenter)
     {
-
         currentProvince = null;
         HideAllOverlays();
     }
@@ -95,6 +91,7 @@ public class BuilderOverlayController : MonoBehaviour
             case "Barracks":
                 SetActive(overlay_barrack, active);
                 SetActive(overlay_barrack2, active);
+                SetActive(barrackButton, active);
                 break;
             case "Fortress":
                 SetActive(overlay_fort, active);
@@ -120,6 +117,7 @@ public class BuilderOverlayController : MonoBehaviour
         SetActive(overlay_house, false);
         SetActive(overlay_house2, false);
         SetActive(overlay_trade, false);
+        SetActive(barrackButton, false);
     }
 
     private void SetActive(GameObject obj, bool active)
@@ -133,5 +131,11 @@ public class BuilderOverlayController : MonoBehaviour
         {
             Debug.LogWarning("[BuilderOverlay] GameObject reference is NULL!");
         }
+    }
+
+    private void OnBarrackMenuOpened()
+    {
+        // When Barrack Menu is opened, hide all overlays
+        HideAllOverlays();
     }
 }

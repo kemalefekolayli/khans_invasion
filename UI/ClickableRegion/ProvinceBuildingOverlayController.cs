@@ -9,6 +9,7 @@ public class ProvinceBuildingOverlayController : MonoBehaviour
     [SerializeField] private GameObject overlay_barrack;
     [SerializeField] private GameObject overlay_house;
     [SerializeField] private GameObject overlay_fort;
+    
 
     private void OnEnable()
     {
@@ -46,6 +47,7 @@ public class ProvinceBuildingOverlayController : MonoBehaviour
         SetActive(overlay_fort, true);
         SetActive(overlay_house, true);
         SetActive(overlay_trade, true);
+
     }
     private void UpdateOverlays()
     {

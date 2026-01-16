@@ -38,6 +38,8 @@ public static class GameEvents
     public static event Action<ProvinceModel> OnProvinceManagementOpened;  // Player-owned
     public static event Action<ProvinceModel> OnProvinceInteractionOpened; // Enemy/neutral
     public static event Action OnProvincePanelClosed;
+
+    public static event Action OnBarrackMenuOpened;
     
     // ===== BUILDING EVENTS =====
     
@@ -60,6 +62,13 @@ public static class GameEvents
     public static event System.Action<TroopLevel, int, int> OnTroopLevelUp;  // troopLevel, fromLevel, toLevel
     public static event System.Action<TroopLevel> OnTroopMaxLevel;  
     // ===== INVOKE METHODS =====
+    
+    public static void BarrackMenuOpened()
+    {
+        Debug.Log($">> Event: BarrackMenuOpened ");
+        OnBarrackMenuOpened?.Invoke();
+    }
+
     
     public static void NationsLoaded()
     {

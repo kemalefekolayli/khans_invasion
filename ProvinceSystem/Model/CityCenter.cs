@@ -27,8 +27,8 @@ public class CityCenter : MonoBehaviour
 
     private enum SpriteState
     {
-    Otag,
-    Star
+    Star,
+    Otag
     }
     private SpriteState currentState;
     void OnEnable()
@@ -49,16 +49,30 @@ public class CityCenter : MonoBehaviour
         }
     }
 
-    public void SwitchSprites()
-    {   
-    currentState = currentState == SpriteState.Otag
-        ? SpriteState.Star
-        : SpriteState.Otag;
-
-    spriteRenderer.sprite = currentState == SpriteState.Otag
-        ? otagSprite
-        : starSprite;
+public void SwitchSprites()
+{   
+    if (currentState == SpriteState.Otag)
+    {
+        currentState = SpriteState.Star;
+        spriteRenderer.sprite = starSprite;
+        
+        // Star sprite'ı için uygun boyut (Haritaya göre ayarla)
+        transform.localScale = new Vector3(0.05f, 0.05f, 1f); 
+        
+        // Eğer rengi beyaz yapmak istersen (sarılaşmayı önlemek için)
+        spriteRenderer.color = Color.white; 
     }
+    else
+    {
+        currentState = SpriteState.Otag;
+        spriteRenderer.sprite = otagSprite;
+        
+        // Otag sprite'ı için uygun boyut
+        transform.localScale = new Vector3(0.02f, 0.02f, 1f);
+        
+        spriteRenderer.color = Color.white;
+    }
+}
     private void Awake()
     {
         EnsureCollider();

@@ -10,7 +10,6 @@ public class AllyProvinceButton : MonoBehaviour
 
     private void Awake()
     {
-        // buttonlara listener ekle
         
         HideButtons();
     }
@@ -20,6 +19,7 @@ public class AllyProvinceButton : MonoBehaviour
         GameEvents.OnProvinceManagementOpened += ShowButtons;
         GameEvents.OnProvincePanelClosed += HideButtons;
         GameEvents.OnCityCenterExit += OnCityCenterExit;  // Yeni eklendi
+        GameEvents.OnBarrackMenuOpened += OnBarracksMenuOpened;
     }
 
     private void OnDisable()
@@ -27,6 +27,7 @@ public class AllyProvinceButton : MonoBehaviour
         GameEvents.OnProvinceManagementOpened -= ShowButtons;
         GameEvents.OnProvincePanelClosed -= HideButtons;
         GameEvents.OnCityCenterExit -= OnCityCenterExit;  // Yeni eklendi
+        GameEvents.OnBarrackMenuOpened -= OnBarracksMenuOpened;
     }
 
 
@@ -48,6 +49,12 @@ public class AllyProvinceButton : MonoBehaviour
         if (panel != null)
             panel.SetActive(false);
 
+    }
+
+    private void OnBarracksMenuOpened()
+    {
+        HideButtons();
+        
     }
     private void OnCityCenterExit(CityCenter cityCenter)
     {
