@@ -5,7 +5,7 @@ public class ProvinceInfoDisplay : MonoBehaviour
 {
     [Header("UI References")]
     public TextMeshProUGUI provinceNameText;
-    public TextMeshProUGUI ownerText;
+    public TextMeshProUGUI ownerText; // we will use this to render the flags
     public TextMeshProUGUI populationText;
     public TextMeshProUGUI taxIncomeText;
     public TextMeshProUGUI tradePowerText;

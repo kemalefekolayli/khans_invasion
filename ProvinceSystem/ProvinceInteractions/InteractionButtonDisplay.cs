@@ -84,7 +84,6 @@ public class InteractionButtonDisplay : MonoBehaviour
 
     private void OnCityCenterEnter(CityCenter cityCenter)
     {
-        Debug.Log($"[ButtonDisplay] CityCenter ENTER -> Show button");
         currentCityCenter = cityCenter;
         shouldShow = true;
     }
@@ -93,7 +92,6 @@ public class InteractionButtonDisplay : MonoBehaviour
     {
         if (currentCityCenter == cityCenter)
         {
-            Debug.Log($"[ButtonDisplay] CityCenter EXIT -> Hide button");
             currentCityCenter = null;
             shouldShow = false;
         }

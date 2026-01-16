@@ -4,6 +4,7 @@ public class GameManager : MonoBehaviour
 {
     [Header("Harita Prefab'ı")]
     public GameObject completeMapPrefab;
+    public NationController nationController;
 
     [Header("GUI Prefab")]
     public GameObject topLeftGUIPrefab;
@@ -73,7 +74,8 @@ public class GameManager : MonoBehaviour
             Debug.LogError("Province_104 not found in map!");
         }
     }
-    
+    // set the capital to province 104
+    nationController.SetNationCapital(PlayerNation.Instance.currentNation, currentMap.transform.Find("Province_104").GetComponent<ProvinceModel>());
     // Fire event - map is loaded
     Invoke(nameof(FireMapLoadedEvent), 0.5f);
     }

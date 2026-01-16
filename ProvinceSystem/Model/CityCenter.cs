@@ -7,6 +7,10 @@ public class CityCenter : MonoBehaviour
     [SerializeField] private ProvinceModel province;
     [SerializeField] private CircleCollider2D cityCollider;
 
+    [Header("Sprites")]
+    [SerializeField] private Sprite otagSprite;
+    [SerializeField] private Sprite starSprite;
+
     [Header("Settings")]
     public float detectionRadius = 0.3f;
     
@@ -21,13 +25,21 @@ public class CityCenter : MonoBehaviour
     [SerializeField] private GameObject fortIcon;
     public ProvinceModel Province => province;
 
+    private enum SpriteState
+    {
+    Otag,
+    Star
+    }
+    private SpriteState currentState;
     void OnEnable()
     {
         GameEvents.OnBuildingConstructed += OnBuildingConstructed;
+        
     }
     void OnDisable()
     {
         GameEvents.OnBuildingConstructed -= OnBuildingConstructed;
+        
     }
     private void OnBuildingConstructed(ProvinceModel prov, string buildingType)
     {
@@ -36,29 +48,29 @@ public class CityCenter : MonoBehaviour
             SetBuildingOverlay(buildingType, true);
         }
     }
+
+    public void SwitchSprites()
+    {   
+    currentState = currentState == SpriteState.Otag
+        ? SpriteState.Star
+        : SpriteState.Otag;
+
+    spriteRenderer.sprite = currentState == SpriteState.Otag
+        ? otagSprite
+        : starSprite;
+    }
     private void Awake()
     {
-
-        
-        // Ensure we have a collider for detection
         EnsureCollider();
         
-        // Auto-find province if not assigned
         if (province == null)
         {
             province = GetComponentInParent<ProvinceModel>();
         }
-
-        // Set tag for detection
         gameObject.tag = "CityCenter";
         UpdateIcons();
-
     }
 
-    private void Start()
-    {
-       
-    }
 
     private void EnsureCollider()
     {
@@ -78,7 +90,6 @@ public class CityCenter : MonoBehaviour
     public void SetProvince(ProvinceModel targetProvince)
     {
         province = targetProvince;
-
     }
 
     public NationModel GetOwner()

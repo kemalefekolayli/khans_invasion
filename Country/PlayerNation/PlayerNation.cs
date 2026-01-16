@@ -45,6 +45,7 @@ public class PlayerNation : MonoBehaviour
         }
     }
 
+    
     private void OnEnable()
     {
         Debug.Log("PlayerNation.OnEnable - subscribing to events");

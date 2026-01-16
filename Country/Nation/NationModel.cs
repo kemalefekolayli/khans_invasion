@@ -15,7 +15,7 @@ public class NationModel
     public string nationName;
     public string nationColor;
     public nationAgression nationAgression;
-
+    public ProvinceModel capitalProvince;
     public List<ProvinceModel> provinceList = new List<ProvinceModel>();
     public List<StateModel> stateList = new List<StateModel>();
 }

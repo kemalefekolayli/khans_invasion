@@ -1,11 +1,14 @@
 using UnityEngine;
-
+using System;
 public class NationController : MonoBehaviour
 {
-    public NationModel model;
-
-    public void PickNation(NationModel nation)
+    
+    public void SetNationCapital(NationModel nation, ProvinceModel capitalProvince)
     {
-        
+        if (nation != null && capitalProvince != null)
+        {
+            nation.capitalProvince = capitalProvince;
+            GameEvents.PlayerCapitalSet(capitalProvince);
+        }
     }
 }

@@ -24,6 +24,23 @@ public class ProvinceModel : MonoBehaviour
     public List<ProvinceModel> neighbors = new List<ProvinceModel>();
     public List<string> buildings = new List<string>();
 
+    void OnEnable()
+    {
+        GameEvents.OnPlayerNationCapitalSet += SwitchSprites;
+    }
+    void OnDisable()
+    {
+        GameEvents.OnPlayerNationCapitalSet -= SwitchSprites;
+    }
+
+    public void SwitchSprites(ProvinceModel capitalProvince)
+    {
+       CityCenter cityCenter = GetComponentInChildren<CityCenter>();
+         if (cityCenter != null && capitalProvince == this)
+         {
+              cityCenter.SwitchSprites();
+         }
+    }
     private void Awake()
     {
         // Tag ataması
@@ -48,7 +65,6 @@ public class ProvinceModel : MonoBehaviour
     }
     void Start()
     {
-        // Eğer collider yoksa, sprite'dan oluştur
         EnsureCollider();
 
     }
@@ -74,8 +90,6 @@ public class ProvinceModel : MonoBehaviour
     }
 
 
-    
-    // Nation rengi ata
     public void SetNationColor(Color nationColor)
     {
         provinceColor = nationColor;

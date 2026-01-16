@@ -29,7 +29,7 @@ public static class GameEvents
     public static event Action<ProvinceModel> OnProvinceExit;
     
     // ===== CITY CENTER EVENTS =====
-    
+    public static event Action<ProvinceModel> OnPlayerNationCapitalSet;
     public static event Action<CityCenter> OnCityCenterEnter;
     public static event Action<CityCenter> OnCityCenterExit;
     
@@ -119,6 +119,11 @@ public static class GameEvents
     }
     
     // City Center Events
+    public static void PlayerCapitalSet(ProvinceModel capitalProvince)
+    {
+        Debug.Log($">> Event: PlayerCapitalSet ({capitalProvince?.provinceName})");
+        OnPlayerNationCapitalSet?.Invoke(capitalProvince);
+    }
     public static void CityCenterEnter(CityCenter cityCenter)
     {
         Debug.Log($">> Event: CityCenterEnter ({cityCenter?.Province?.provinceName})");
