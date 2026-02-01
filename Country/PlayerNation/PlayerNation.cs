@@ -184,19 +184,43 @@ public class PlayerNation : MonoBehaviour
         Debug.Log($"✓ Stats recalculated: {CityCount} cities, Tax: {TaxIncome}, Trade: {TradeIncome}");
     }
 
+    /// <summary>
+    /// DEPRECATED: Use TurnManager.Instance.EndPlayerTurn() instead.
+    /// Income is now handled by IncomeProcessor.
+    /// </summary>
+    [System.Obsolete("Use TurnManager.Instance.EndPlayerTurn() instead.")]
     public void EndTurn()
     {
-        if (currentNation == null) return;
+        Debug.LogWarning("[PlayerNation] EndTurn() is deprecated. Use TurnManager.Instance.EndPlayerTurn() instead.");
         
-        nationMoney += TotalIncome;
-        currentTurn++;
-        
-        RecalculateStats();
-        
-        Debug.Log($"Turn {currentTurn}: +{TotalIncome:F0} gold (Total: {nationMoney:F0})");
-        
-        GameEvents.TurnEnded(currentTurn);
-        GameEvents.PlayerStatsChanged();
+        // Delegate to TurnManager if available
+        if (TurnManager.Instance != null)
+        {
+            TurnManager.Instance.EndPlayerTurn();
+        }
+        else
+        {
+            // Legacy fallback
+            if (currentNation == null) return;
+            
+            nationMoney += TotalIncome;
+            currentTurn++;
+            
+            RecalculateStats();
+            
+            Debug.Log($"Turn {currentTurn}: +{TotalIncome:F0} gold (Total: {nationMoney:F0})");
+            
+            GameEvents.TurnEnded(currentTurn);
+            GameEvents.PlayerStatsChanged();
+        }
+    }
+    
+    /// <summary>
+    /// Get the current turn from TurnManager.
+    /// </summary>
+    public int GetCurrentTurn()
+    {
+        return TurnManager.Instance?.CurrentTurn ?? currentTurn;
     }
 
     public bool OwnsProvince(ProvinceModel province)

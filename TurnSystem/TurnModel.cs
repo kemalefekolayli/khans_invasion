@@ -1,5 +1,10 @@
 using UnityEngine;
 
+/// <summary>
+/// DEPRECATED: Use TurnManager instead.
+/// This class is kept for backward compatibility only.
+/// </summary>
+[System.Obsolete("Use TurnManager instead. This class will be removed in a future version.")]
 public class TurnModel : MonoBehaviour
 {
     public enum TurnPhase
@@ -7,25 +12,28 @@ public class TurnModel : MonoBehaviour
         PlayerTurn,
         EnemyTurn,
     }
-    // add logic somewhere so that when its enemyturn we cant move our characters
-    public TurnPhase currentPhase;
-    public int turnNumber = 1;
-    void Start()
+    
+    // Delegate to TurnManager
+    public TurnPhase currentPhase 
     {
-        turnNumber = 1;
-        currentPhase = TurnPhase.PlayerTurn;
+        get 
+        {
+            if (TurnManager.Instance == null) return TurnPhase.PlayerTurn;
+            return TurnManager.Instance.IsPlayerTurn ? TurnPhase.PlayerTurn : TurnPhase.EnemyTurn;
+        }
+    }
+    
+    public int turnNumber 
+    {
+        get => TurnManager.Instance?.CurrentTurn ?? 1;
     }
 
+    /// <summary>
+    /// DEPRECATED: Use TurnManager.Instance.EndPlayerTurn() instead.
+    /// </summary>
     public void AdvanceTurn()
     {
-        switch (currentPhase)
-        {
-            case TurnPhase.PlayerTurn:
-                currentPhase = TurnPhase.EnemyTurn;
-                break;
-            case TurnPhase.EnemyTurn:
-                currentPhase = TurnPhase.PlayerTurn;
-                break;
-        }
+        Debug.LogWarning("[TurnModel] AdvanceTurn() is deprecated. Use TurnManager.Instance.EndPlayerTurn() instead.");
+        TurnManager.Instance?.EndPlayerTurn();
     }
 }

@@ -150,4 +150,74 @@ public class ArmyManager : MonoBehaviour
         
         return nearby;
     }
+
+    /// <summary>
+    /// Get all player armies that don't have a commanding general (idle/reserve armies).
+    /// </summary>
+    public List<Army> GetIdlePlayerArmies()
+    {
+        List<Army> idle = new List<Army>();
+        
+        foreach (var army in playerArmies)
+        {
+            if (army == null) continue;
+            
+            // No general = idle army
+            if (!army.HasGeneral)
+            {
+                idle.Add(army);
+            }
+        }
+        
+        return idle;
+    }
+
+    /// <summary>
+    /// Get idle player armies that have room for more troops.
+    /// Returns armies sorted by available space (most space first).
+    /// </summary>
+    public List<Army> GetIdleArmiesWithSpace()
+    {
+        List<Army> armiesWithSpace = new List<Army>();
+        
+        foreach (var army in playerArmies)
+        {
+            if (army == null) continue;
+            if (army.HasGeneral) continue;
+            
+            float availableSpace = army.Data.maxSize - army.ArmySize;
+            if (availableSpace > 0)
+            {
+                armiesWithSpace.Add(army);
+            }
+        }
+        
+        // Sort by available space descending (fill armies with most room first)
+        armiesWithSpace.Sort((a, b) => 
+        {
+            float spaceA = a.Data.maxSize - a.ArmySize;
+            float spaceB = b.Data.maxSize - b.ArmySize;
+            return spaceB.CompareTo(spaceA);
+        });
+        
+        return armiesWithSpace;
+    }
+
+    /// <summary>
+    /// Get the total available space across all idle armies.
+    /// </summary>
+    public float GetTotalIdleArmySpace()
+    {
+        float totalSpace = 0;
+        
+        foreach (var army in playerArmies)
+        {
+            if (army == null) continue;
+            if (army.HasGeneral) continue;
+            
+            totalSpace += army.Data.maxSize - army.ArmySize;
+        }
+        
+        return totalSpace;
+    }
 }

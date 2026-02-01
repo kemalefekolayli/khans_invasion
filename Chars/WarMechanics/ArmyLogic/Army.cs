@@ -51,16 +51,30 @@ public class Army : MonoBehaviour
     public void AddSoldiers(float count)
     {
         data.size = Mathf.Min(data.size + count, data.maxSize);
+        RefreshArmyText();
     }
     
  
     public void RemoveSoldiers(float count)
     {
         data.size = Mathf.Max(data.size - count, 0);
+        RefreshArmyText();
         
         if (data.size <= 0)
         {
             OnArmyDestroyed();
+        }
+    }
+    
+    /// <summary>
+    /// Refresh the army text display to show current size.
+    /// </summary>
+    private void RefreshArmyText()
+    {
+        ArmyText armyText = GetComponentInChildren<ArmyText>();
+        if (armyText != null)
+        {
+            armyText.RefreshDisplay();
         }
     }
 

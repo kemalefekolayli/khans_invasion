@@ -2,23 +2,46 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
-public class Horse : MonoBehaviour, IProvinceDetector
+/// <summary>
+/// Player-controlled horse character.
+/// Handles movement, province detection, and city center detection.
+/// 
+/// PERFORMANCE OPTIMIZATIONS:
+/// 1. Province/CityCenter checks only run when horse is moving
+/// 2. Reuses Collider2D array instead of allocating new one each frame
+/// 3. Position caching to avoid redundant checks when stationary
+/// </summary>
+public class Horse : MonoBehaviour, IProvinceDetector // this is deprecated
 {
+    [Header("Movement")]
     public Rigidbody2D horseRigidBody;
     public float moveSpeed = 5f;
+    
+    [Header("Visuals")]
     public SpriteRenderer spriteRenderer;
 
+    // Movement state
     private Vector2 moveDir;
+    private Vector3 lastCheckedPosition;
+    
+    // Province tracking
     private HashSet<ProvinceModel> currentProvinces = new HashSet<ProvinceModel>();
     private ProvinceModel currentProvince;
+    
+    // City center tracking
     private CityCenter currentCityCenter;
+    
+    // Performance: reusable list for physics queries
+    private List<Collider2D> hitBuffer = new List<Collider2D>(20);
+    private ContactFilter2D contactFilter = new ContactFilter2D().NoFilter();
+    
+    // Minimum distance to trigger a new check (avoids micro-movement spam)
+    private const float MIN_CHECK_DISTANCE = 0.05f;
 
     // IProvinceDetector implementation
     public ProvinceModel CurrentProvince => currentProvince;
-    public CityCenter CurrentCityCenter => currentCityCenter;
     public Vector3 Position => transform.position;
-    
-    // Check if horse is on a city center
+    public CityCenter CurrentCityCenter => currentCityCenter;
     public bool IsOnCityCenter => currentCityCenter != null;
 
     private void Awake()
@@ -28,27 +51,24 @@ public class Horse : MonoBehaviour, IProvinceDetector
 
         if (spriteRenderer == null)
             spriteRenderer = GetComponent<SpriteRenderer>();
+            
+        lastCheckedPosition = transform.position;
     }
+
     private void Update()
     {
-        if (Keyboard.current == null) return;
 
-        Vector2 input = Vector2.zero;
-
-        if (Keyboard.current.wKey.isPressed) input.y += 1;
-        if (Keyboard.current.sKey.isPressed) input.y -= 1;
-        if (Keyboard.current.aKey.isPressed) input.x -= 1;
-        if (Keyboard.current.dKey.isPressed) input.x += 1;
-
-        moveDir = input.normalized;
-
-        if (moveDir.x > 0.01f)
-            spriteRenderer.flipX = false;
-        else if (moveDir.x < -0.01f)
-            spriteRenderer.flipX = true;
-
-        CheckCurrentProvince();
-        CheckCityCenter();
+        SelectableGeneral selectable = GetComponent<SelectableGeneral>();
+        if (selectable != null && !selectable.IsSelected) return;
+        HandleInput();
+        
+        // OPTIMIZATION: Only check collisions if we've moved enough
+        if (HasMovedEnough())
+        {
+            CheckCurrentProvince();
+            CheckCityCenter();
+            lastCheckedPosition = transform.position;
+        }
     }
 
     private void FixedUpdate()
@@ -61,15 +81,43 @@ public class Horse : MonoBehaviour, IProvinceDetector
             horseRigidBody.MovePosition(targetPos);
     }
 
+    private void HandleInput()
+    {
+        if (Keyboard.current == null) return;
+
+        Vector2 input = Vector2.zero;
+
+        if (Keyboard.current.wKey.isPressed) input.y += 1;
+        if (Keyboard.current.sKey.isPressed) input.y -= 1;
+        if (Keyboard.current.aKey.isPressed) input.x -= 1;
+        if (Keyboard.current.dKey.isPressed) input.x += 1;
+
+        moveDir = input.normalized;
+
+        // Sprite facing is now handled by SelectableGeneral.cs (Single Responsibility Principle)
+    }
+
+    /// <summary>
+    /// Check if horse has moved enough to warrant a new collision check
+    /// </summary>
+    private bool HasMovedEnough()
+    {
+        float distance = Vector3.Distance(transform.position, lastCheckedPosition);
+        return distance >= MIN_CHECK_DISTANCE;
+    }
+
     private void CheckCurrentProvince()
     {
-        Collider2D[] hits = Physics2D.OverlapPointAll(transform.position);
+        // New Unity API - non-allocating with List
+        hitBuffer.Clear();
+        Physics2D.OverlapPoint(transform.position, contactFilter, hitBuffer);
 
         currentProvinces.Clear();
         ProvinceModel topProvince = null;
 
-        foreach (var hit in hits)
+        for (int i = 0; i < hitBuffer.Count; i++)
         {
+            Collider2D hit = hitBuffer[i];
             if (hit.CompareTag("Province"))
             {
                 ProvinceModel province = hit.GetComponent<ProvinceModel>();
@@ -82,6 +130,7 @@ public class Horse : MonoBehaviour, IProvinceDetector
             }
         }
 
+        // Only fire events on change
         if (currentProvince != topProvince)
         {
             if (currentProvince != null)
@@ -96,12 +145,14 @@ public class Horse : MonoBehaviour, IProvinceDetector
 
     private void CheckCityCenter()
     {
-        Collider2D[] hits = Physics2D.OverlapPointAll(transform.position);
-        
+        hitBuffer.Clear();
+        Physics2D.OverlapPoint(transform.position, contactFilter, hitBuffer);
+
         CityCenter detectedCityCenter = null;
-        
-        foreach (var hit in hits)
+
+        for (int i = 0; i < hitBuffer.Count; i++)
         {
+            Collider2D hit = hitBuffer[i];
             if (hit.CompareTag("CityCenter"))
             {
                 CityCenter center = hit.GetComponent<CityCenter>();
@@ -112,7 +163,8 @@ public class Horse : MonoBehaviour, IProvinceDetector
                 }
             }
         }
-        
+
+        // Only fire events on change (not every frame!)
         if (currentCityCenter != detectedCityCenter)
         {
             if (currentCityCenter != null)
@@ -120,23 +172,25 @@ public class Horse : MonoBehaviour, IProvinceDetector
                 currentCityCenter.SetHighlight(false);
                 GameEvents.CityCenterExit(currentCityCenter);
             }
-            
+
             if (detectedCityCenter != null)
             {
                 detectedCityCenter.SetHighlight(true);
                 GameEvents.CityCenterEnter(detectedCityCenter);
             }
-            
+
             currentCityCenter = detectedCityCenter;
         }
     }
 
     private bool IsPositionBlocked(Vector2 position)
     {
-        Collider2D[] hits = Physics2D.OverlapPointAll(position);
-        foreach (var hit in hits)
+        hitBuffer.Clear();
+        Physics2D.OverlapPoint(position, contactFilter, hitBuffer);
+        
+        for (int i = 0; i < hitBuffer.Count; i++)
         {
-            if (hit.CompareTag("River"))
+            if (hitBuffer[i].CompareTag("River"))
                 return true;
         }
         return false;

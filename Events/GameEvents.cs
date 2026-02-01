@@ -15,9 +15,11 @@ public static class GameEvents
     public static event Action OnProvincesAssigned;
     public static event Action OnPlayerNationReady;
     public static event Action OnMapLoaded;
+
+    // ===== GENERAL EVENTS =====
+    public static event Action<CityCenter, General> OnGeneralEnteredCityCenter;
     
     // ===== GAMEPLAY EVENTS =====
-    
     public static event Action<int> OnTurnEnded;
     public static event Action<NationModel> OnPlayerNationChanged;
     public static event Action<ProvinceModel, NationModel, NationModel> OnProvinceOwnerChanged;
@@ -214,4 +216,10 @@ public static class GameEvents
         Debug.Log($">> Event: TroopMaxLevel (GOLDEN!)");
         OnTroopMaxLevel?.Invoke(troop);
     }
+
+    public static void GeneralEnteredCityCenter(CityCenter cityCenter, General general)
+{
+    Debug.Log($">> Event: GeneralEnteredCityCenter - {general?.GeneralName}");
+    OnGeneralEnteredCityCenter?.Invoke(cityCenter, general);
+}
 }
