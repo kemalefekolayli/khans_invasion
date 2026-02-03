@@ -28,12 +28,14 @@ public class FogOfWarManager : MonoBehaviour
     {
         GameEvents.OnProvincesAssigned += OnProvincesAssigned;
         GameEvents.OnProvinceEnter += OnProvinceEnter;
+        GameEvents.OnProvinceOwnerChanged += OnProvinceOwnerChanged;
     }
 
     private void OnDisable()
     {
         GameEvents.OnProvincesAssigned -= OnProvincesAssigned;
         GameEvents.OnProvinceEnter -= OnProvinceEnter;
+        GameEvents.OnProvinceOwnerChanged -= OnProvinceOwnerChanged;
     }
 
     private void OnProvincesAssigned()
@@ -141,6 +143,30 @@ public class FogOfWarManager : MonoBehaviour
         
         // Update neighbors to border peek mode
         UpdateAdjacentProvinces();
+    }
+    
+    /// <summary>
+    /// When a province changes owner, update our stored target color to the new nation's color.
+    /// This prevents the fog system from lerping back to the old owner's color.
+    /// </summary>
+    private void OnProvinceOwnerChanged(ProvinceModel province, NationModel oldOwner, NationModel newOwner)
+    {
+        if (province == null) return;
+        
+        if (provinceFogStates.TryGetValue(province, out FogState state))
+        {
+            // Update target color to new owner's color
+            Color newNationColor = GetNationColor(province);
+            state.targetColor = newNationColor;
+            
+            // Also immediately apply the color if province is revealed
+            if (state.isRevealing && province.spriteRenderer != null)
+            {
+                province.spriteRenderer.color = newNationColor;
+            }
+            
+            Debug.Log($"[FogOfWarManager] Updated target color for {province.provinceName} to new owner's color");
+        }
     }
 
     private void UpdateAdjacentProvinces()

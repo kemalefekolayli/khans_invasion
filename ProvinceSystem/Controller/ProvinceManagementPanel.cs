@@ -46,8 +46,6 @@ public class ProvinceManagementPanel : MonoBehaviour
 
     private void Awake()
     {
-        builder = new Builder();
-        
         if (panelRoot != null)
             panelRoot.SetActive(false);
         
@@ -57,6 +55,7 @@ public class ProvinceManagementPanel : MonoBehaviour
 
     private void Start()
     {
+        builder = Builder.Instance;
         SetupButtons();
         UpdateCostLabels();
     }
@@ -100,7 +99,8 @@ public class ProvinceManagementPanel : MonoBehaviour
 
     private void UpdateCostLabels()
     {
-        var costs = Builder.GetAllBuildingCosts();
+        if (Builder.Instance == null) return;
+        var costs = Builder.Instance.GetAllBuildingCosts();
         
         if (fortressCostText != null)
             fortressCostText.text = $"{costs["Fortress"]}g";

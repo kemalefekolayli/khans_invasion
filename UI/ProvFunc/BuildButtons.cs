@@ -6,8 +6,7 @@ public class BuildButtons : MonoBehaviour
 
      void Start()
     {
-        Builder builder = new Builder();
-        this.builder = builder;
+        builder = Builder.Instance;
     }
 
     

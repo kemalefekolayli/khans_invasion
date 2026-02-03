@@ -18,6 +18,7 @@ public class PlayerNationGUI : MonoBehaviour
     public TextMeshProUGUI armyStrText;     // Army strength
     public TextMeshProUGUI cityCountText;   // Number of cities
     public TextMeshProUGUI turnCountText;   // Current turn
+    public TextMeshProUGUI lootText;        // Khan's carried loot
     
     [Header("Display Settings")]
     public bool showPendingIncome = true;   // Show "+X" next to current values
@@ -40,6 +41,7 @@ public class PlayerNationGUI : MonoBehaviour
         GameEvents.OnTurnEnded += OnTurnEnded;
         GameEvents.OnBuildingConstructed += OnBuildingConstructed;
         GameEvents.OnProvinceOwnerChanged += OnProvinceOwnerChanged;
+        GameEvents.OnProvinceRaided += OnProvinceRaided;
     }
 
     private void OnDisable()
@@ -50,6 +52,7 @@ public class PlayerNationGUI : MonoBehaviour
         GameEvents.OnTurnEnded -= OnTurnEnded;
         GameEvents.OnBuildingConstructed -= OnBuildingConstructed;
         GameEvents.OnProvinceOwnerChanged -= OnProvinceOwnerChanged;
+        GameEvents.OnProvinceRaided -= OnProvinceRaided;
     }
 
     private void Start()
@@ -99,6 +102,12 @@ public class PlayerNationGUI : MonoBehaviour
         }
         UpdateGUI();
     }
+    
+    private void OnProvinceRaided(ProvinceModel province, General raider, float lootAmount)
+    {
+        // Update loot display when raid happens
+        UpdateLootDisplay();
+    }
 
     private void CacheCurrentValues()
     {
@@ -137,6 +146,9 @@ public class PlayerNationGUI : MonoBehaviour
         
         if (turnCountText == null)
             turnCountText = FindTextByName("TurnCountText");
+        
+        if (lootText == null)
+            lootText = FindTextByName("LootText");
     }
 
     private TextMeshProUGUI FindTextByName(string name)
@@ -225,9 +237,80 @@ public class PlayerNationGUI : MonoBehaviour
         if (cityCountText != null)
             cityCountText.text = playerNation.CityCount.ToString();
         
-        // Turn count
+        // Turn count - use TurnManager for the real turn count
         if (turnCountText != null)
-            turnCountText.text = $"Turn {playerNation.currentTurn}";
+        {
+            int turn = TurnManager.Instance?.CurrentTurn ?? playerNation.GetCurrentTurn();
+            turnCountText.text = $"Turn {turn}";
+        }
+        
+        // Loot display
+        UpdateLootDisplay();
+    }
+    
+    /// <summary>
+    /// Update the loot display text with Khan/selected general's carried loot.
+    /// </summary>
+    private void UpdateLootDisplay()
+    {
+        if (lootText == null) return;
+        
+        General khan = GetKhanGeneral();
+        if (khan == null)
+        {
+            lootText.text = "0/0";
+            return;
+        }
+        
+        float carriedLoot = khan.CarriedLoot;
+        float maxCapacity = khan.MaxLootCapacity;
+        
+        // Format: "150/500" or with color if nearly full
+        if (carriedLoot >= maxCapacity * 0.9f)
+        {
+            // Nearly full - show in warning color
+            string colorHex = ColorUtility.ToHtmlStringRGB(pendingLossColor);
+            lootText.text = $"<color=#{colorHex}>{FormatNumber(carriedLoot)}</color>/{FormatNumber(maxCapacity)}";
+        }
+        else if (carriedLoot > 0)
+        {
+            // Has some loot - show in positive color
+            string colorHex = ColorUtility.ToHtmlStringRGB(pendingIncomeColor);
+            lootText.text = $"<color=#{colorHex}>{FormatNumber(carriedLoot)}</color>/{FormatNumber(maxCapacity)}";
+        }
+        else
+        {
+            lootText.text = $"0/{FormatNumber(maxCapacity)}";
+        }
+    }
+    
+    /// <summary>
+    /// Get the Khan's General component.
+    /// </summary>
+    private General GetKhanGeneral()
+    {
+        // First try from selection manager
+        if (GeneralSelectionManager.Instance != null && 
+            GeneralSelectionManager.Instance.SelectedGeneral != null)
+        {
+            SelectableGeneral selected = GeneralSelectionManager.Instance.SelectedGeneral;
+            if (selected.IsKhan)
+            {
+                return selected.GetComponent<General>();
+            }
+        }
+        
+        // Fallback: find Khan in scene
+        SelectableGeneral[] generals = FindObjectsByType<SelectableGeneral>(FindObjectsSortMode.None);
+        foreach (var selectable in generals)
+        {
+            if (selectable.IsKhan)
+            {
+                return selectable.GetComponent<General>();
+            }
+        }
+        
+        return null;
     }
 
     /// <summary>

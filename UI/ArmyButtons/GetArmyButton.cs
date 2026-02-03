@@ -21,6 +21,10 @@ public class GetArmyButton : MonoBehaviour
     [Tooltip("Default max size for newly created armies. Can be modified by upgrades/buffs.")]
     [SerializeField] private float defaultMaxArmySize = 1000f;
     
+    [Header("Conscription Settings")]
+    [Tooltip("Minimum population required to conscript troops")]
+    [SerializeField] private float minPopulationRequired = 200f;
+    
     [Header("Debug")]
     [SerializeField] private bool logActions = true;
 
@@ -50,24 +54,101 @@ public class GetArmyButton : MonoBehaviour
             return;
         }
         
+        // Get the current province
+        ProvinceModel province = selected.CurrentProvince;
+        if (province == null)
+        {
+            Debug.LogWarning("[GetArmyButton] General is not in a province!");
+            SpawnPopup(selected.transform.position, "No province!", Color.red);
+            return;
+        }
+        
+        // Check if province belongs to player
+        if (!PlayerNation.Instance.OwnsProvince(province))
+        {
+            Debug.LogWarning("[GetArmyButton] Cannot recruit from enemy province!");
+            SpawnPopup(selected.transform.position, "Enemy province!", Color.red);
+            return;
+        }
+        
+        // Check minimum population
+        if (province.provinceCurrentPop < minPopulationRequired)
+        {
+            Debug.LogWarning($"[GetArmyButton] Province {province.provinceName} has insufficient population ({province.provinceCurrentPop:F0} < {minPopulationRequired})");
+            SpawnPopup(province.transform.position, "Not enough\npopulation!", new Color(1f, 0.5f, 0f));
+            return;
+        }
+        
+        // Check if we can recruit the full amount (need at least 200 left after recruiting)
+        float maxCanRecruit = province.provinceCurrentPop - minPopulationRequired;
+        float actualRecruit = Mathf.Min(troopsToRecruit, maxCanRecruit);
+        
+        if (actualRecruit <= 0)
+        {
+            Debug.LogWarning($"[GetArmyButton] Cannot recruit - would leave province with less than {minPopulationRequired} population");
+            SpawnPopup(province.transform.position, "Not enough\npopulation!", new Color(1f, 0.5f, 0f));
+            return;
+        }
+        
+        // Deduct population from province
+        province.provinceCurrentPop -= actualRecruit;
+        
+        if (logActions)
+        {
+            Debug.Log($"[GetArmyButton] Conscripted {actualRecruit:F0} troops from {province.provinceName}. Pop: {province.provinceCurrentPop:F0}");
+        }
+        
+        // Show conscription popup
+        SpawnPopup(province.transform.position, $"-{actualRecruit:F0} pop", new Color(0.8f, 0.6f, 0.2f));
+        
         // Check if already has an army
         if (general.HasArmy)
         {
             // Try to add troops to existing army
-            AddTroopsToExistingArmy(general, selected);
+            AddTroopsToExistingArmy(general, selected, actualRecruit);
         }
         else
         {
             // Create a new army for this general
-            CreateNewArmyForGeneral(general, selected);
+            CreateNewArmyForGeneral(general, selected, actualRecruit);
         }
+        
+        // Update player stats
+        PlayerNation.Instance?.RecalculateStats();
+        GameEvents.PlayerStatsChanged();
+    }
+    
+    /// <summary>
+    /// Spawn a floating popup text.
+    /// </summary>
+    private void SpawnPopup(Vector3 position, string message, Color color)
+    {
+        GameObject textObj = new GameObject($"RecruitPopup_{message}");
+        textObj.transform.position = position + new Vector3(0, 0.5f, 0);
+        
+        TMPro.TextMeshPro tmp = textObj.AddComponent<TMPro.TextMeshPro>();
+        tmp.text = message;
+        tmp.fontSize = 3f;
+        tmp.color = color;
+        tmp.alignment = TMPro.TextAlignmentOptions.Center;
+        tmp.fontStyle = TMPro.FontStyles.Bold;
+        tmp.outlineWidth = 0.2f;
+        tmp.outlineColor = Color.black;
+        tmp.sortingOrder = 100;
+        
+        // Add floating behavior
+        FloatingPopupText floatScript = textObj.AddComponent<FloatingPopupText>();
+        floatScript.Initialize(textObj.transform.position, 1f, 2f);
+        
+        // Billboard
+        textObj.AddComponent<PopupBillboard>();
     }
 
     /// <summary>
     /// Add troops to the general's existing army.
     /// If overflow occurs, distribute to idle armies first.
     /// </summary>
-    private void AddTroopsToExistingArmy(General general, SelectableGeneral selectable)
+    private void AddTroopsToExistingArmy(General general, SelectableGeneral selectable, float amount)
     {
         Army existingArmy = general.CommandedArmy;
         ArmyData data = existingArmy.Data;
@@ -81,20 +162,20 @@ public class GetArmyButton : MonoBehaviour
             Debug.Log($"[GetArmyButton] {selectable.DisplayName}'s army: {currentSize}/{maxSize} (Space: {availableSpace})");
         }
         
-        if (availableSpace >= troopsToRecruit)
+        if (availableSpace >= amount)
         {
             // Enough room - just add to existing army
-            existingArmy.AddSoldiers(troopsToRecruit);
+            existingArmy.AddSoldiers(amount);
             
             if (logActions)
             {
-                Debug.Log($"✓ [GetArmyButton] Added {troopsToRecruit} troops to {selectable.DisplayName}'s army. New size: {existingArmy.ArmySize}");
+                Debug.Log($"✓ [GetArmyButton] Added {amount} troops to {selectable.DisplayName}'s army. New size: {existingArmy.ArmySize}");
             }
         }
         else if (availableSpace > 0)
         {
             // Partial room - fill up and distribute overflow
-            float overflow = troopsToRecruit - availableSpace;
+            float overflow = amount - availableSpace;
             
             // Fill existing army to max
             existingArmy.AddSoldiers(availableSpace);
@@ -112,23 +193,23 @@ public class GetArmyButton : MonoBehaviour
             // Army is at max capacity - distribute to idle armies or create new
             if (logActions)
             {
-                Debug.Log($"[GetArmyButton] {selectable.DisplayName}'s army is FULL. Distributing {troopsToRecruit} troops to reserves...");
+                Debug.Log($"[GetArmyButton] {selectable.DisplayName}'s army is FULL. Distributing {amount} troops to reserves...");
             }
             
-            DistributeTroopsToIdleArmies(selectable, troopsToRecruit);
+            DistributeTroopsToIdleArmies(selectable, amount);
         }
     }
 
     /// <summary>
     /// Create a brand new army assigned to the general.
     /// </summary>
-    private void CreateNewArmyForGeneral(General general, SelectableGeneral selectable)
+    private void CreateNewArmyForGeneral(General general, SelectableGeneral selectable, float amount)
     {
         ArmyFactory factory = GetFactory();
         if (factory == null) return;
         
         // Create army data - use configurable max size
-        ArmyData armyData = new ArmyData(troopsToRecruit, startingArmyQuality, true);
+        ArmyData armyData = new ArmyData(amount, startingArmyQuality, true);
         armyData.armyName = $"{selectable.DisplayName}'s Army";
         armyData.maxSize = defaultMaxArmySize;
         
@@ -139,7 +220,7 @@ public class GetArmyButton : MonoBehaviour
         {
             if (logActions)
             {
-                Debug.Log($"✓ [GetArmyButton] Created new army for {selectable.DisplayName} (Size: {troopsToRecruit}, Max: {defaultMaxArmySize})");
+                Debug.Log($"✓ [GetArmyButton] Created new army for {selectable.DisplayName} (Size: {amount}, Max: {defaultMaxArmySize})");
             }
             GameEvents.ArmySpawned(army, general);
         }

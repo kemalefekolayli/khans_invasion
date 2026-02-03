@@ -23,7 +23,7 @@ public class UIPolygonHotspot : MonoBehaviour, IPointerClickHandler, ICanvasRayc
         rt = (RectTransform)transform;
         
         if (builder == null)
-            builder = new Builder();
+            builder = Builder.Instance;
         
         // Subscribe only once (static)
         SubscribeToEvents();

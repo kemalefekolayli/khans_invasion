@@ -53,6 +53,18 @@ public static class GameEvents
     public static event Action<Army, General> OnArmySpawned;
     public static event Action<Army> OnArmyDestroyed;
     public static event Action<Army, General> OnArmyAssigned;
+    
+    // ===== RAID EVENTS =====
+    
+    public static event Action<ProvinceModel, General, float> OnProvinceRaided; // province, raider, lootAmount
+    
+    // ===== SIEGE EVENTS =====
+    
+    public static event Action<ProvinceModel, General, float> OnProvinceSieged; // province, attacker, defenseStrength
+    public static event Action<ProvinceModel, General, SiegeManager.SiegeResult> OnSiegeFailed; // province, attacker, reason
+    public static event Action<ProvinceModel, NationModel, NationModel> OnProvinceConquered; // province, oldOwner, newOwner
+    public static event Action<ProvinceModel> OnSiegeCancelled; // province (siege abandoned)
+    public static event Action<ProvinceModel, General, int, int> OnSiegeCasualties; // province, general, casualties, turnsRemaining
 
     public static void ProvinceDataLoaded()
 {
@@ -222,4 +234,51 @@ public static class GameEvents
     Debug.Log($">> Event: GeneralEnteredCityCenter - {general?.GeneralName}");
     OnGeneralEnteredCityCenter?.Invoke(cityCenter, general);
 }
+
+    // Raid Events
+    public static void ProvinceRaided(ProvinceModel province, General raider, float lootAmount)
+    {
+        Debug.Log($">> Event: ProvinceRaided ({province?.provinceName} by {raider?.GeneralName}, Loot: {lootAmount:F0})");
+        OnProvinceRaided?.Invoke(province, raider, lootAmount);
+    }
+    
+    // Siege Events
+    public static void ProvinceSieged(ProvinceModel province, General attacker, float defenseStrength)
+    {
+        Debug.Log($">> Event: ProvinceSieged ({province?.provinceName} by {attacker?.GeneralName}, Defense: {defenseStrength:F0})");
+        OnProvinceSieged?.Invoke(province, attacker, defenseStrength);
+    }
+    
+    public static void SiegeFailed(ProvinceModel province, General attacker, SiegeManager.SiegeResult result)
+    {
+        Debug.Log($">> Event: SiegeFailed ({province?.provinceName} - {result})");
+        OnSiegeFailed?.Invoke(province, attacker, result);
+    }
+    
+    public static void ProvinceConquered(ProvinceModel province, NationModel oldOwner, NationModel newOwner)
+    {
+        Debug.Log($">> Event: ProvinceConquered ({province?.provinceName}: {oldOwner?.nationName} -> {newOwner?.nationName})");
+        OnProvinceConquered?.Invoke(province, oldOwner, newOwner);
+    }
+    
+    public static void SiegeCancelled(ProvinceModel province)
+    {
+        Debug.Log($">> Event: SiegeCancelled ({province?.provinceName})");
+        OnSiegeCancelled?.Invoke(province);
+    }
+    
+    public static void SiegeCasualties(ProvinceModel province, General general, int casualties, int turnsRemaining)
+    {
+        Debug.Log($">> Event: SiegeCasualties ({province?.provinceName} - {general?.GeneralName} lost {casualties}, {turnsRemaining} turns left)");
+        OnSiegeCasualties?.Invoke(province, general, casualties, turnsRemaining);
+    }
+    
+    // ===== POPULATION EVENTS =====
+    
+    public static event Action<ProvinceModel, float> OnPopulationGrowth; // province, growthAmount
+    
+    public static void PopulationGrowth(ProvinceModel province, float growthAmount)
+    {
+        OnPopulationGrowth?.Invoke(province, growthAmount);
+    }
 }

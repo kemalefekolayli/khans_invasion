@@ -67,6 +67,21 @@ public class Army : MonoBehaviour
     }
     
     /// <summary>
+    /// Set army size directly (used for siege casualties).
+    /// </summary>
+    public void SetArmySize(float newSize)
+    {
+        float oldSize = data.size;
+        data.size = Mathf.Clamp(newSize, 0, data.maxSize);
+        RefreshArmyText();
+        
+        if (data.size <= 0 && oldSize > 0)
+        {
+            OnArmyDestroyed();
+        }
+    }
+    
+    /// <summary>
     /// Refresh the army text display to show current size.
     /// </summary>
     private void RefreshArmyText()

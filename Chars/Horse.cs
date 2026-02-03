@@ -19,6 +19,10 @@ public class Horse : MonoBehaviour, IProvinceDetector // this is deprecated
     
     [Header("Visuals")]
     public SpriteRenderer spriteRenderer;
+    
+    [Header("Animation")]
+    [Tooltip("8-directional animator component")]
+    public DirectionalSpriteAnimator spriteAnimator;
 
     // Movement state
     private Vector2 moveDir;
@@ -51,6 +55,10 @@ public class Horse : MonoBehaviour, IProvinceDetector // this is deprecated
 
         if (spriteRenderer == null)
             spriteRenderer = GetComponent<SpriteRenderer>();
+        
+        // Auto-find animator
+        if (spriteAnimator == null)
+            spriteAnimator = GetComponent<DirectionalSpriteAnimator>();
             
         lastCheckedPosition = transform.position;
     }
@@ -81,6 +89,13 @@ public class Horse : MonoBehaviour, IProvinceDetector // this is deprecated
             horseRigidBody.MovePosition(targetPos);
     }
 
+    // Track current active direction
+    private Vector2 currentDirection = Vector2.down;
+    
+    // Buffer to hold diagonal direction when transitioning to single key release
+    private float directionHoldTimer = 0f;
+    private const float DIRECTION_HOLD_DURATION = 0.15f; // Wait 150ms before switching from diagonal to cardinal
+    
     private void HandleInput()
     {
         if (Keyboard.current == null) return;
@@ -93,8 +108,53 @@ public class Horse : MonoBehaviour, IProvinceDetector // this is deprecated
         if (Keyboard.current.dKey.isPressed) input.x += 1;
 
         moveDir = input.normalized;
+        
+        // Is this frame diagonal input?
+        bool isDiagonalInput = Mathf.Abs(input.x) > 0.1f && Mathf.Abs(input.y) > 0.1f;
 
-        // Sprite facing is now handled by SelectableGeneral.cs (Single Responsibility Principle)
+        if (spriteAnimator != null)
+        {
+            if (input.sqrMagnitude > 0.5f) // Moving
+            {
+                if (isDiagonalInput)
+                {
+                    // Definitely diagonal -> update immediately & reset hold timer
+                    currentDirection = moveDir;
+                    directionHoldTimer = DIRECTION_HOLD_DURATION;
+                    spriteAnimator.SetDirection(currentDirection);
+                }
+                else
+                {
+                    // Cardinal input (single key)
+                    if (directionHoldTimer > 0)
+                    {
+                        // We recently had diagonal input. 
+                        // Don't switch to cardinal yet! Hold previous direction.
+                        // This covers the split-second release delay.
+                        directionHoldTimer -= Time.deltaTime;
+                        
+                        // Keep animating, but use OLD direction (diagonal)
+                        spriteAnimator.SetDirection(currentDirection); 
+                    }
+                    else
+                    {
+                        // Hold time expired -> user really means to go cardinal now
+                        currentDirection = moveDir;
+                        spriteAnimator.SetDirection(currentDirection);
+                    }
+                }
+            }
+            else if (input.sqrMagnitude < 0.01f) // Stopped
+            {
+                // Just stop using whatever currentDirection is active, no corrections needed.
+                // Because we held the diagonal direction during the release, currentDirection is STILL diagonal!
+                spriteAnimator.SetDirection(currentDirection);
+                spriteAnimator.StopMoving();
+                
+                // Clear timer
+                directionHoldTimer = 0f;
+            }
+        }
     }
 
     /// <summary>
