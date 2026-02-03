@@ -47,27 +47,54 @@ public class PopulationPopupSpawner : MonoBehaviour
     /// <summary>
     /// Called when a building is constructed. Shows bonus for relevant buildings.
     /// </summary>
+    /// <summary>
+    /// Called when a building is constructed. Shows benefit popup for all buildings.
+    /// </summary>
     private void OnBuildingConstructed(ProvinceModel province, string buildingType)
     {
         if (province == null) return;
         
-        // Only show popup for Housing (population bonus)
-        if (buildingType == "Housing")
+        string message = "";
+        float fontSize = buildingFontSize;
+
+        switch (buildingType)
         {
-            // Get the housing bonus from Builder
-            float bonus = 1000f; // Default
-            if (Builder.Instance != null)
-            {
-                var (_, desc, _) = Builder.Instance.GetBuildingInfo("Housing");
-                // Try to parse bonus from description, or use default
-            }
-            
+            case "Housing":
+                float bonus = 1000f; // Default
+                if (Builder.Instance != null)
+                {
+                    // Logic to get exact bonus could go here if exposed
+                }
+                message = $"+{bonus:F0} max pop";
+                break;
+
+            case "Barracks":
+                message = "Barracks built: Can hire troops here now.";
+                fontSize = buildingFontSize * 0.6f; // Smaller font for long text
+                break;
+
+            case "Trade_Building":
+                message = "+25 trade";
+                break;
+
+            case "Farm":
+                message = "+10 tax income";
+                break;
+
+            case "Fortress":
+                message = "Fortress: Defences significantly improved.";
+                fontSize = buildingFontSize * 0.6f; // Smaller font for long text
+                break;
+        }
+        
+        if (!string.IsNullOrEmpty(message))
+        {
             Vector3 spawnPos = GetCityCenterPosition(province) + spawnOffset;
-            SpawnPopupText($"+{bonus:F0} max pop", spawnPos, buildingBonusColor, buildingFontSize);
+            SpawnPopupText(message, spawnPos, buildingBonusColor, fontSize);
             
             if (logPopups)
             {
-                Debug.Log($"[PopulationPopup] Housing built in {province.provinceName}: +{bonus} max pop");
+                Debug.Log($"[PopulationPopup] {buildingType} built in {province.provinceName}: {message}");
             }
         }
     }
