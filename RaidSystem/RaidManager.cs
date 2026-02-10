@@ -54,7 +54,7 @@ public class RaidManager : MonoBehaviour, ITurnProcessor
         if (Instance == null)
         {
             Instance = this;
-            Debug.Log("✓ RaidManager initialized");
+
         }
         else
         {

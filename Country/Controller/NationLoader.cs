@@ -45,7 +45,7 @@ public class NationLoader : MonoBehaviour
             nationsById[nj.id] = model;
         }
 
-        Debug.Log($"✓ Loaded {allNations.Count} nations from JSON");
+
         
         // Fire event - nations are ready
         GameEvents.NationsLoaded();

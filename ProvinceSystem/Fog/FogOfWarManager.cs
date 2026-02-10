@@ -111,7 +111,7 @@ public class FogOfWarManager : MonoBehaviour
         // After setting up player provinces, update adjacent provinces to border peek
         UpdateAdjacentProvinces();
         
-        Debug.Log($"✓ FogOfWar initialized: {playerOwnedCount} player provinces revealed, {foggedCount} provinces fogged");
+
     }
 
     private Color GetNationColor(ProvinceModel province)

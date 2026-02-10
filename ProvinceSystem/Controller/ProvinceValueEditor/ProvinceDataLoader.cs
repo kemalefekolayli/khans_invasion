@@ -96,7 +96,7 @@ public class ProvinceDataLoader : MonoBehaviour
             }
         }
 
-        Debug.Log($"✓ ProvinceDataLoader: Applied data to {appliedCount} provinces from {dataFileName}");
+
         
         // Signal that data is loaded - PlayerNation will recalculate
         GameEvents.ProvinceDataLoaded();

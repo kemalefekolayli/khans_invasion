@@ -101,7 +101,7 @@ public class ProvinceNationAssigner : MonoBehaviour
         // Load assignments from JSON
         LoadAssignments();
 
-        Debug.Log("✓ Province-Nation assignment complete!");
+
         
         // Fire event - provinces are assigned
         GameEvents.ProvincesAssigned();
@@ -117,7 +117,7 @@ public class ProvinceNationAssigner : MonoBehaviour
             provincesById[(int)province.provinceId] = province;
         }
 
-        Debug.Log($"✓ Collected {provincesById.Count} provinces from scene");
+
     }
 
     void LoadAssignments()
@@ -188,7 +188,7 @@ public class ProvinceNationAssigner : MonoBehaviour
             }
         }
 
-        Debug.Log($"✓ Assigned {assignedCount} provinces to nations");
+
     }
 
     void CreateTemplateAssignments()

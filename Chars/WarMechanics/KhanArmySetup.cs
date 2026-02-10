@@ -71,7 +71,7 @@ public class KhanArmySetup : MonoBehaviour
         khanData.commandBonus = khanCommandBonus;
         khanGeneral.Initialize(khanData);
         
-        Debug.Log("✓ Khan set up as General");
+
         
         // Spawn initial army
         SpawnInitialArmy();

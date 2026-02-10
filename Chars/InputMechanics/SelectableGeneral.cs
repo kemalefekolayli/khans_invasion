@@ -72,6 +72,19 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
         if (clickCollider == null)
             clickCollider = GetComponent<Collider2D>();
         
+        // IMPORTANT: Make rigidbody kinematic to prevent physical collisions between generals
+        if (rb != null)
+        {
+            rb.bodyType = RigidbodyType2D.Kinematic;
+            rb.useFullKinematicContacts = false;
+        }
+        
+        // Make collider a trigger so it doesn't push other objects
+        if (clickCollider != null)
+        {
+            clickCollider.isTrigger = true;
+        }
+        
         // Set default display name if not set
         if (string.IsNullOrEmpty(displayName))
             displayName = gameObject.name;
@@ -203,6 +216,17 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
         if (selectionIndicator != null)
         {
             selectionIndicator.SetActive(_isSelected);
+            
+            // Update name on indicator when selected
+            if (_isSelected)
+            {
+                SelectionIndicator indicator = selectionIndicator.GetComponent<SelectionIndicator>();
+                if (indicator != null)
+                {
+                    string nameToShow = isKhan ? "Khan" : displayName;
+                    indicator.SetGeneralName(nameToShow);
+                }
+            }
         }
         
         // Tint sprite based on selection
@@ -239,13 +263,14 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
         
         if (_currentProvince != topProvince)
         {
-            if (_currentProvince != null)
-                GameEvents.ProvinceExit(_currentProvince);
+            ProvinceModel oldProvince = _currentProvince;
+            _currentProvince = topProvince;
+            
+            if (oldProvince != null)
+                GameEvents.ProvinceExit(oldProvince);
             
             if (topProvince != null)
                 GameEvents.ProvinceEnter(topProvince);
-            
-            _currentProvince = topProvince;
         }
     }
     
@@ -270,10 +295,13 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
         
         if (_currentCityCenter != detectedCityCenter)
         {
-            if (_currentCityCenter != null)
+            CityCenter oldCenter = _currentCityCenter;
+            _currentCityCenter = detectedCityCenter;
+            
+            if (oldCenter != null)
             {
-                _currentCityCenter.SetHighlight(false);
-                GameEvents.CityCenterExit(_currentCityCenter);
+                oldCenter.SetHighlight(false);
+                GameEvents.CityCenterExit(oldCenter);
             }
             
             if (detectedCityCenter != null)
@@ -281,8 +309,6 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
                 detectedCityCenter.SetHighlight(true);
                 GameEvents.CityCenterEnter(detectedCityCenter);
             }
-            
-            _currentCityCenter = detectedCityCenter;
         }
     }
     
@@ -332,6 +358,14 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
     public void SetDisplayName(string name)
     {
         displayName = name;
+    }
+    
+    /// <summary>
+    /// Set whether this general is the Khan.
+    /// </summary>
+    public void SetIsKhan(bool value)
+    {
+        isKhan = value;
     }
     
     /// <summary>

@@ -11,6 +11,10 @@ public class PlayerNation : MonoBehaviour
     public float nationMoney;
     public int currentTurn = 1;
     
+    [Header("Quest Rewards")]
+    public float bonusTradeIncome = 0f;
+    public bool canMoveCapital = false;
+    
     [Header("Initialization")]
     public int startingNationId = 0;
     
@@ -18,6 +22,8 @@ public class PlayerNation : MonoBehaviour
     public static PlayerNation Instance { get; private set; }
 
     // Convenience properties - delegate to currentNation
+    public NationModel Nation => currentNation;
+    public System.Collections.Generic.List<ProvinceModel> OwnedProvinces => currentNation?.provinceList;
     public long NationId => currentNation?.nationId ?? 0;
     public string NationName => currentNation?.nationName ?? "No Nation";
     public string NationColor => currentNation?.nationColor ?? "#808080";
@@ -26,7 +32,7 @@ public class PlayerNation : MonoBehaviour
     // Calculated properties
     public float TaxIncome { get; private set; }
     public float TradeIncome { get; private set; }
-    public float TotalIncome => TaxIncome + TradeIncome;
+    public float TotalIncome => TaxIncome + TradeIncome + bonusTradeIncome;
     public float PopulationSize { get; private set; }
     public float ArmySize { get; private set; }
     public float ArmyStrength { get; private set; }
@@ -36,7 +42,7 @@ public class PlayerNation : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            Debug.Log("✓ PlayerNation singleton created");
+
         }
         else
         {
@@ -76,7 +82,7 @@ public class PlayerNation : MonoBehaviour
 
     private void InitializePlayer()
     {
-        Debug.Log($"InitializePlayer called. startingNationId = {startingNationId}");
+
         
         if (currentNation == null)
         {
@@ -88,22 +94,14 @@ public class PlayerNation : MonoBehaviour
                 return;
             }
             
-            Debug.Log($"NationLoader found. Total nations: {loader.allNations.Count}");
-            Debug.Log($"Nations in dictionary: {loader.nationsById.Count}");
-            
-            // Debug: print all nation IDs
-            foreach (var kvp in loader.nationsById)
-            {
-                Debug.Log($"  - Nation ID {kvp.Key}: {kvp.Value.nationName}, provinces: {kvp.Value.provinceList.Count}");
-            }
+
             
             currentNation = loader.GetNationById(startingNationId);
             
             if (currentNation != null)
             {
                 currentNation.isPlayer = true;
-                Debug.Log($"✓ Player initialized as: {currentNation.nationName} (ID: {currentNation.nationId})");
-                Debug.Log($"✓ Player owns {currentNation.provinceList.Count} provinces");
+
             }
             else
             {
@@ -132,7 +130,7 @@ public class PlayerNation : MonoBehaviour
         if (currentNation != null)
         {
             currentNation.isPlayer = true;
-            Debug.Log($"✓ Player nation changed to: {currentNation.nationName}");
+
         }
         
         RecalculateStats();
@@ -181,7 +179,7 @@ public class PlayerNation : MonoBehaviour
             }
         }
         
-        Debug.Log($"✓ Stats recalculated: {CityCount} cities, Tax: {TaxIncome}, Trade: {TradeIncome}");
+
     }
 
     /// <summary>

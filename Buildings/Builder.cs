@@ -118,6 +118,7 @@ public class Builder : MonoBehaviour
         }
         
         GameEvents.BuildingConstructed(province, buildingType);
+        GameEvents.BuildingBuilt(buildingType, province);
         
         return cost;
     }

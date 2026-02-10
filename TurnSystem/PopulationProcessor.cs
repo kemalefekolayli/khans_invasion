@@ -46,7 +46,7 @@ public class PopulationProcessor : MonoBehaviour, ITurnProcessor
         if (TurnManager.Instance != null)
         {
             TurnManager.Instance.RegisterTurnProcessor(this);
-            Debug.Log("✓ PopulationProcessor registered with TurnManager");
+
         }
     }
     

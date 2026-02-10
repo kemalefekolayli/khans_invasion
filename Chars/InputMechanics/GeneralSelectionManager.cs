@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using System;
 using System.Collections.Generic;
 
@@ -21,6 +22,10 @@ public class GeneralSelectionManager : MonoBehaviour
     
     [Tooltip("Layer mask for click selection raycasts")]
     public LayerMask selectableLayerMask = ~0; // Default: all layers
+    
+    [Header("Camera")]
+    [Tooltip("Camera controller for focusing on selected general")]
+    [SerializeField] private CameraController cameraController;
     
     [Header("Debug")]
     [SerializeField] private SelectableGeneral _selectedGeneral;
@@ -48,7 +53,23 @@ public class GeneralSelectionManager : MonoBehaviour
         }
         Instance = this;
         
-        Debug.Log("✓ GeneralSelectionManager initialized");
+        // Try to find CameraController if not assigned
+        if (cameraController == null)
+        {
+            cameraController = FindFirstObjectByType<CameraController>();
+        }
+        
+
+    }
+    
+    private void Update()
+    {
+        // V key to cycle between generals
+        if (Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame)
+        {
+            Debug.Log("[GeneralSelectionManager] V pressed - cycling to next general");
+            SelectNext();
+        }
     }
     
     private void OnDestroy()
@@ -153,6 +174,9 @@ public class GeneralSelectionManager : MonoBehaviour
             return;
         }
         
+        // Close any open province panels when switching generals
+        GameEvents.ProvincePanelClosed();
+        
         // Deselect current
         SelectableGeneral previousGeneral = _selectedGeneral;
         if (previousGeneral != null)
@@ -165,6 +189,12 @@ public class GeneralSelectionManager : MonoBehaviour
         _selectedGeneral = general;
         _selectedGeneral.OnSelected();
         OnGeneralSelected?.Invoke(_selectedGeneral);
+        
+        // Focus camera on new selection
+        if (cameraController != null)
+        {
+            cameraController.SetCameraPosition(_selectedGeneral.transform.position);
+        }
         
         Debug.Log($"✓ [GeneralSelectionManager] Selected: {general.DisplayName}");
     }

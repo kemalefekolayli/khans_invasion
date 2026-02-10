@@ -19,6 +19,7 @@ public class InteractionButtonDisplay : MonoBehaviour
     public bool followCityCenter = false;
     
     private bool shouldShow = false;
+    private bool isPanelOpen = false;
     private CityCenter currentCityCenter;
     private Camera mainCamera;
     private RectTransform rectTransform;
@@ -40,18 +41,16 @@ public class InteractionButtonDisplay : MonoBehaviour
         
         SetVisibility(false, true);
         
-        Debug.Log($"[ButtonDisplay] Init - Container: {buttonContainer != null}, CanvasGroup: {canvasGroup != null}");
+
     }
 
     private void Start()
     {
-        // Subscribe in Start to ensure GameEvents is ready
         SubscribeToEvents();
     }
 
     private void OnEnable()
     {
-        // Also try OnEnable in case object was disabled/enabled
         SubscribeToEvents();
     }
 
@@ -59,22 +58,19 @@ public class InteractionButtonDisplay : MonoBehaviour
     {
         if (isSubscribed) return;
         
-        GameEvents.OnCityCenterEnter += OnCityCenterEnter;
-        GameEvents.OnCityCenterExit += OnCityCenterExit;
+        // Only need panel open/close events - Update handles city center logic
         GameEvents.OnProvinceManagementOpened += OnPanelOpened;
         GameEvents.OnProvinceInteractionOpened += OnPanelOpened;
         GameEvents.OnProvincePanelClosed += OnPanelClosed;
         
         isSubscribed = true;
-        Debug.Log("[ButtonDisplay] Subscribed to events");
+
     }
 
     private void OnDisable()
     {
         if (!isSubscribed) return;
         
-        GameEvents.OnCityCenterEnter -= OnCityCenterEnter;
-        GameEvents.OnCityCenterExit -= OnCityCenterExit;
         GameEvents.OnProvinceManagementOpened -= OnPanelOpened;
         GameEvents.OnProvinceInteractionOpened -= OnPanelOpened;
         GameEvents.OnProvincePanelClosed -= OnPanelClosed;
@@ -82,34 +78,50 @@ public class InteractionButtonDisplay : MonoBehaviour
         isSubscribed = false;
     }
 
-    private void OnCityCenterEnter(CityCenter cityCenter)
-    {
-        currentCityCenter = cityCenter;
-        shouldShow = true;
-    }
-
-    private void OnCityCenterExit(CityCenter cityCenter)
-    {
-        if (currentCityCenter == cityCenter)
-        {
-            currentCityCenter = null;
-            shouldShow = false;
-        }
-    }
-
     private void OnPanelOpened(ProvinceModel province)
     {
-        shouldShow = false;
+        Debug.Log($"[ButtonDisplay] OnPanelOpened -> isPanelOpen=true (was {isPanelOpen})");
+        isPanelOpen = true;
     }
 
     private void OnPanelClosed()
     {
-        if (currentCityCenter != null)
-            shouldShow = true;
+        Debug.Log($"[ButtonDisplay] OnPanelClosed -> isPanelOpen=false (was {isPanelOpen})");
+        isPanelOpen = false;
     }
 
+    private bool _lastShouldShow = false;
+    
     private void Update()
     {
+        // Simple logic: show button if selected general is on a city center AND no panel is open
+        var selectionManager = GeneralSelectionManager.Instance;
+        if (selectionManager != null && selectionManager.SelectedGeneral != null)
+        {
+            currentCityCenter = selectionManager.SelectedGeneral.CurrentCityCenter;
+            
+            // Safety: if general left city center, any open panel should be considered closed
+            if (currentCityCenter == null && isPanelOpen)
+            {
+                Debug.Log("[ButtonDisplay] Safety reset: general left city center, clearing isPanelOpen");
+                isPanelOpen = false;
+            }
+            
+            shouldShow = currentCityCenter != null && !isPanelOpen;
+        }
+        else
+        {
+            currentCityCenter = null;
+            shouldShow = false;
+        }
+        
+        // Log only on state change
+        if (shouldShow != _lastShouldShow)
+        {
+            Debug.Log($"[ButtonDisplay] shouldShow changed: {_lastShouldShow} -> {shouldShow} (CC={currentCityCenter?.Province?.provinceName}, isPanelOpen={isPanelOpen})");
+            _lastShouldShow = shouldShow;
+        }
+        
         UpdateVisibility();
         UpdatePosition();
     }

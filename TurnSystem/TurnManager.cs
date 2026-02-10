@@ -18,7 +18,7 @@ public class TurnManager : MonoBehaviour
     
     [Header("Settings")]
     [Tooltip("If true, AI nations will be processed during their turn (future feature)")]
-    [SerializeField] private bool enableAITurns = false;
+    [SerializeField] private bool enableAITurns = true;
     
     [Header("Debug")]
     [SerializeField] private bool logTurnEvents = true;
@@ -56,7 +56,6 @@ public class TurnManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            Debug.Log("✓ TurnManager initialized");
         }
         else
         {
@@ -85,10 +84,7 @@ public class TurnManager : MonoBehaviour
             return;
         }
         
-        if (logTurnEvents)
-        {
-            Debug.Log($"[TurnManager] ═══ PLAYER TURN {currentTurn} ENDED ═══");
-        }
+
         
         OnPlayerTurnEnd?.Invoke();
         
@@ -138,10 +134,7 @@ public class TurnManager : MonoBehaviour
     {
         currentPhase = TurnPhase.EndTurnCalculations;
         
-        if (logTurnEvents)
-        {
-            Debug.Log("[TurnManager] Processing end-of-turn calculations...");
-        }
+
         
         OnEndTurnCalculationsStart?.Invoke();
         
@@ -178,12 +171,7 @@ public class TurnManager : MonoBehaviour
         
         currentTurn++;
         
-        if (logTurnEvents)
-        {
-            Debug.Log($"[TurnManager] ═══════════════════════════════════");
-            Debug.Log($"[TurnManager] ═══     TURN {currentTurn} BEGINS     ═══");
-            Debug.Log($"[TurnManager] ═══════════════════════════════════");
-        }
+
         
         OnTurnStart?.Invoke(currentTurn);
         
@@ -197,10 +185,7 @@ public class TurnManager : MonoBehaviour
     {
         currentPhase = TurnPhase.PlayerTurn;
         
-        if (logTurnEvents)
-        {
-            Debug.Log($"[TurnManager] Player turn {currentTurn} started - awaiting actions...");
-        }
+
         
         OnPlayerTurnStart?.Invoke();
     }
@@ -218,10 +203,7 @@ public class TurnManager : MonoBehaviour
         {
             turnProcessors.Add(processor);
             
-            if (logTurnEvents)
-            {
-                Debug.Log($"[TurnManager] Registered turn processor: {processor.GetType().Name}");
-            }
+
         }
     }
     

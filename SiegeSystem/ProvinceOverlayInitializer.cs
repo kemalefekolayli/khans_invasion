@@ -98,7 +98,7 @@ public class ProvinceOverlayInitializer : MonoBehaviour
         
         if (logInitialization)
         {
-            Debug.Log($"[ProvinceOverlayInitializer] ✓ Initialized {allProvinces.Length} provinces");
+
             if (addSiegeOverlay)
                 Debug.Log($"  - Added SiegeOverlayController to {siegeAdded} provinces");
             if (addRaidOverlay)

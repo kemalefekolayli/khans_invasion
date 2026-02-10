@@ -79,38 +79,32 @@ public static class GameEvents
     
     public static void BarrackMenuOpened()
     {
-        Debug.Log($">> Event: BarrackMenuOpened ");
         OnBarrackMenuOpened?.Invoke();
     }
 
     
     public static void NationsLoaded()
     {
-        Debug.Log(">> Event: NationsLoaded");
         OnNationsLoaded?.Invoke();
     }
     
     public static void ProvincesAssigned()
     {
-        Debug.Log(">> Event: ProvincesAssigned");
         OnProvincesAssigned?.Invoke();
     }
     
     public static void PlayerNationReady()
     {
-        Debug.Log(">> Event: PlayerNationReady");
         OnPlayerNationReady?.Invoke();
     }
     
     public static void MapLoaded()
     {
-        Debug.Log(">> Event: MapLoaded");
         OnMapLoaded?.Invoke();
     }
     
     public static void TurnEnded(int newTurn)
     {
-        Debug.Log($">> Event: TurnEnded (Turn {newTurn})");
         OnTurnEnded?.Invoke(newTurn);
     }
     
@@ -144,18 +138,15 @@ public static class GameEvents
     // City Center Events
     public static void PlayerCapitalSet(ProvinceModel capitalProvince)
     {
-        Debug.Log($">> Event: PlayerCapitalSet ({capitalProvince?.provinceName})");
         OnPlayerNationCapitalSet?.Invoke(capitalProvince);
     }
     public static void CityCenterEnter(CityCenter cityCenter)
     {
-        Debug.Log($">> Event: CityCenterEnter ({cityCenter?.Province?.provinceName})");
         OnCityCenterEnter?.Invoke(cityCenter);
     }
     
     public static void CityCenterExit(CityCenter cityCenter)
     {
-        Debug.Log($">> Event: CityCenterExit ({cityCenter?.Province?.provinceName})");
         OnCityCenterExit?.Invoke(cityCenter);
     }
     
@@ -174,7 +165,6 @@ public static class GameEvents
     
     public static void ProvincePanelClosed()
     {
-        Debug.Log(">> Event: ProvincePanelClosed");
         OnProvincePanelClosed?.Invoke();
     }
     
@@ -194,7 +184,6 @@ public static class GameEvents
     // Army Events
     public static void ArmySpawned(Army army, General general)
     {
-        Debug.Log($">> Event: ArmySpawned (Size: {army?.ArmySize} for {general?.GeneralName})");
         OnArmySpawned?.Invoke(army, general);
     }
     
@@ -206,7 +195,6 @@ public static class GameEvents
     
     public static void ArmyAssigned(Army army, General general)
     {
-        Debug.Log($">> Event: ArmyAssigned ({general?.GeneralName})");
         OnArmyAssigned?.Invoke(army, general);
     }
 
@@ -230,10 +218,9 @@ public static class GameEvents
     }
 
     public static void GeneralEnteredCityCenter(CityCenter cityCenter, General general)
-{
-    Debug.Log($">> Event: GeneralEnteredCityCenter - {general?.GeneralName}");
-    OnGeneralEnteredCityCenter?.Invoke(cityCenter, general);
-}
+    {
+        OnGeneralEnteredCityCenter?.Invoke(cityCenter, general);
+    }
 
     // Raid Events
     public static void ProvinceRaided(ProvinceModel province, General raider, float lootAmount)
@@ -280,5 +267,41 @@ public static class GameEvents
     public static void PopulationGrowth(ProvinceModel province, float growthAmount)
     {
         OnPopulationGrowth?.Invoke(province, growthAmount);
+    }
+    
+    // ===== QUEST EVENTS =====
+    
+    public static event Action<string, ProvinceModel> OnBuildingBuilt;
+    public static event Action<Army> OnArmyDefeated;
+    public static event Action<NationModel> OnNationDestroyed;
+    public static event Action OnQuestPanelOpened;
+    public static event Action OnQuestPanelClosed;
+    
+    public static void BuildingBuilt(string buildingType, ProvinceModel province)
+    {
+        Debug.Log($">> Event: BuildingBuilt ({buildingType} in {province?.provinceName})");
+        OnBuildingBuilt?.Invoke(buildingType, province);
+    }
+    
+    public static void ArmyDefeated(Army army)
+    {
+        Debug.Log($">> Event: ArmyDefeated");
+        OnArmyDefeated?.Invoke(army);
+    }
+    
+    public static void NationDestroyed(NationModel nation)
+    {
+        Debug.Log($">> Event: NationDestroyed ({nation?.nationName})");
+        OnNationDestroyed?.Invoke(nation);
+    }
+    
+    public static void QuestPanelOpened()
+    {
+        OnQuestPanelOpened?.Invoke();
+    }
+    
+    public static void QuestPanelClosed()
+    {
+        OnQuestPanelClosed?.Invoke();
     }
 }

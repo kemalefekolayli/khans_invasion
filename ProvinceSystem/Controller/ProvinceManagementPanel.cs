@@ -66,6 +66,7 @@ public class ProvinceManagementPanel : MonoBehaviour
         GameEvents.OnProvincePanelClosed += OnPanelClosed;
         GameEvents.OnBuildingConstructed += OnBuildingConstructed;
         GameEvents.OnPlayerStatsChanged += RefreshButtonStates;
+        GameEvents.OnCityCenterExit += OnCityCenterExit;
     }
 
     private void OnDisable()
@@ -74,6 +75,7 @@ public class ProvinceManagementPanel : MonoBehaviour
         GameEvents.OnProvincePanelClosed -= OnPanelClosed;
         GameEvents.OnBuildingConstructed -= OnBuildingConstructed;
         GameEvents.OnPlayerStatsChanged -= RefreshButtonStates;
+        GameEvents.OnCityCenterExit -= OnCityCenterExit;
     }
 
     private void SetupButtons()
@@ -120,6 +122,7 @@ public class ProvinceManagementPanel : MonoBehaviour
 
     private void OnManagementOpened(ProvinceModel province)
     {
+        Debug.Log($"[MgmtPanel] OnManagementOpened: {province?.provinceName}, isVisible={isVisible}");
         currentProvince = province;
         playerNation = PlayerNation.Instance;
         
@@ -130,7 +133,18 @@ public class ProvinceManagementPanel : MonoBehaviour
 
     private void OnPanelClosed()
     {
+        Debug.Log($"[MgmtPanel] OnPanelClosed called, isVisible={isVisible}");
         HidePanel();
+    }
+
+    private void OnCityCenterExit(CityCenter cityCenter)
+    {
+        Debug.Log($"[MgmtPanel] OnCityCenterExit: {cityCenter?.Province?.provinceName}, isVisible={isVisible}");
+        if (isVisible)
+        {
+            Debug.Log($"[MgmtPanel] Panel is visible -> ClosePanel()");
+            ClosePanel();
+        }
     }
 
     private void OnBuildingConstructed(ProvinceModel province, string buildingType)
@@ -144,6 +158,7 @@ public class ProvinceManagementPanel : MonoBehaviour
 
     private void ShowPanel()
     {
+        Debug.Log($"[MgmtPanel] ShowPanel -> isVisible=true");
         isVisible = true;
         if (panelRoot != null)
             panelRoot.SetActive(true);
@@ -151,6 +166,7 @@ public class ProvinceManagementPanel : MonoBehaviour
 
     private void HidePanel()
     {
+        Debug.Log($"[MgmtPanel] HidePanel -> isVisible=false");
         isVisible = false;
         currentProvince = null;
         if (panelRoot != null)
@@ -243,6 +259,7 @@ public class ProvinceManagementPanel : MonoBehaviour
 
     private void ClosePanel()
     {
+        Debug.Log($"[MgmtPanel] ClosePanel -> firing ProvincePanelClosed event");
         GameEvents.ProvincePanelClosed();
     }
 }

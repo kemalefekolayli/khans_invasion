@@ -56,8 +56,13 @@ public class BuilderOverlayController : MonoBehaviour
 
     private void OnCityCenterExit(CityCenter cityCenter)
     {
-        currentProvince = null;
-        HideAllOverlays();
+        if (currentProvince != null)
+        {
+            currentProvince = null;
+            HideAllOverlays();
+            Debug.Log("[BuilderOverlay] CityExit -> firing ProvincePanelClosed");
+            GameEvents.ProvincePanelClosed();
+        }
     }
 
     private void OnBuildingConstructed(ProvinceModel province, string buildingType)

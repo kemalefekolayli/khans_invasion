@@ -102,7 +102,7 @@ public class ProvinceLootInitializer : MonoBehaviour
         
         if (logInitialization)
         {
-            Debug.Log($"[ProvinceLootInitializer] ✓ Initialized loot for {initialized} provinces");
+
             Debug.Log($"[ProvinceLootInitializer] Total loot in world: {totalLoot:F0}");
             if (zeroIncomeCount > 0)
             {

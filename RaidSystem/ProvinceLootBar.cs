@@ -54,7 +54,7 @@ public class ProvinceLootBar : MonoBehaviour
             }
         }
         
-        Debug.Log($"[ProvinceLootBar] Initialized on {gameObject.name}");
+
     }
     
     private void Update()
@@ -74,7 +74,7 @@ public class ProvinceLootBar : MonoBehaviour
         GameEvents.OnProvinceEnter += OnProvinceEnter;
         GameEvents.OnProvinceRaided += OnProvinceRaided;
         
-        Debug.Log($"[ProvinceLootBar] Subscribed to events");
+
     }
     
     private void OnDisable()
@@ -94,7 +94,7 @@ public class ProvinceLootBar : MonoBehaviour
         if (province != null)
         {
             SetProvince(province);
-            Debug.Log($"[ProvinceLootBar] Entered province {province.provinceName}");
+
         }
     }
     
@@ -152,9 +152,7 @@ public class ProvinceLootBar : MonoBehaviour
         float lootPercent = RaidManager.Instance.GetLootPercentage(currentProvince);
         targetFill = lootPercent;
         
-        Debug.Log($"[ProvinceLootBar] {currentProvince.provinceName}: Loot = {currentProvince.availableLoot:F1}, " +
-                  $"Max = {RaidManager.Instance.CalculateMaxLoot(currentProvince):F1}, " +
-                  $"Percent = {lootPercent:P0}");
+
         
         if (!animateFill)
         {

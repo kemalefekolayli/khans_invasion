@@ -16,7 +16,7 @@ public class ArmyManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            Debug.Log("✓ ArmyManager initialized");
+
         }
         else
         {

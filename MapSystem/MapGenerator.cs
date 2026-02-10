@@ -60,11 +60,6 @@ public class MapGenerator : MonoBehaviour
                 // Dünya birimi başına pixel oranını hesapla
                 worldToPixelRatio = provinceMapTexture.width / mapWorldSize.x;
                 
-                Debug.Log($"✓ MapBackground kullanılıyor");
-                Debug.Log($"✓ Texture boyutu: {provinceMapTexture.width}x{provinceMapTexture.height}");
-                Debug.Log($"✓ Harita dünya boyutu: {mapWorldSize}");
-                Debug.Log($"✓ Harita merkezi: {mapWorldCenter}");
-                Debug.Log($"✓ World to Pixel Ratio: {worldToPixelRatio}");
                 return;
             }
         }
@@ -76,13 +71,12 @@ public class MapGenerator : MonoBehaviour
         mapWorldCenter = Vector3.zero;
         worldToPixelRatio = provinceMapTexture.width / manualMapScale;
         
-        Debug.Log($"✓ Manuel ölçek: {manualMapScale}");
-        Debug.Log($"✓ World to Pixel Ratio: {worldToPixelRatio}");
+
     }
 
     IEnumerator GenerateProvinces()
     {
-        Debug.Log("=== HARİTA TARAMASI BAŞLADI ===");
+
         float startTime = Time.realtimeSinceStartup;
         
         allPixels = provinceMapTexture.GetPixels32();
@@ -112,12 +106,12 @@ public class MapGenerator : MonoBehaviour
         }
         
         float scanTime = Time.realtimeSinceStartup - startTime;
-        Debug.Log($"✓ Tarama tamamlandı: {colorToPixels.Count} province bulundu ({scanTime:F2} saniye)");
+
         
         yield return StartCoroutine(CreateProvincesGradually());
         
         float totalTime = Time.realtimeSinceStartup - startTime;
-        Debug.Log($"=== TÜM SİSTEM HAZIR === Toplam süre: {totalTime:F2} saniye");
+
         
         allPixels = null;
     }
@@ -166,15 +160,12 @@ public class MapGenerator : MonoBehaviour
             }
             
             float progress = (float)processedCount / totalProvinces * 100f;
-            if (processedCount % 20 == 0)
-            {
-                Debug.Log($"İlerleme: {processedCount}/{totalProvinces} ({progress:F1}%)");
-            }
+
             
             yield return null;
         }
         
-        Debug.Log("✓ Province oluşturma tamamlandı!");
+
     }
 
     void CreateProvinceSprite(ProvinceModel province, HashSet<Vector2Int> pixels, Color32 originalProvinceColor)
@@ -277,10 +268,7 @@ public class MapGenerator : MonoBehaviour
     
     PolygonCollider2D collider = province.gameObject.AddComponent<PolygonCollider2D>();
     
-    if (province.provinceId <= 3)
-    {
-        Debug.Log($"Province {province.provinceId}: Pos={worldPos}, MinXY=({minX},{minY}), Size={width}x{height}, Scale={spriteScale}");
-    }
+
 }
     bool IsEdgePixel(Vector2Int pixel, HashSet<Vector2Int> provincePixels)
     {

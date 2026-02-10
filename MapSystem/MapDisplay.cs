@@ -38,7 +38,7 @@ public class MapDisplay : MonoBehaviour
             // Pozisyon = merkez
             transform.position = Vector3.zero;
             
-            Debug.Log("✓ MapBackground hazır!");
+
             Debug.Log($"  Sprite: {mapSprite.name}");
             Debug.Log($"  Scale: {mapScale}");
             Debug.Log($"  Bounds: {spriteRenderer.bounds.size}");

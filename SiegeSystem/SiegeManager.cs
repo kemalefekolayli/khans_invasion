@@ -77,7 +77,7 @@ public class SiegeManager : MonoBehaviour, ITurnProcessor
         if (Instance == null)
         {
             Instance = this;
-            Debug.Log("✓ SiegeManager initialized");
+
         }
         else
         {

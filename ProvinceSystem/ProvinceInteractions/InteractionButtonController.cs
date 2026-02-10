@@ -26,7 +26,7 @@ public class InteractionButtonController : MonoBehaviour
         if (button != null)
             button.onClick.AddListener(OnButtonClicked);
         
-        Debug.Log($"[ButtonController] Init - Button: {button != null}");
+
     }
 
     private void Start()
@@ -51,18 +51,32 @@ public class InteractionButtonController : MonoBehaviour
         GameEvents.OnProvincePanelClosed += OnPanelClosed;
         
         isSubscribed = true;
-        Debug.Log("[ButtonController] Subscribed to events");
+
     }
     
     private void TryGetCurrentCityCenter()
     {
-        // Find the Horse and check if it's on a city center
+        // First try the currently selected general
+        GeneralSelectionManager selectionManager = GeneralSelectionManager.Instance;
+        if (selectionManager != null && selectionManager.SelectedGeneral != null)
+        {
+            SelectableGeneral selectedGeneral = selectionManager.SelectedGeneral;
+            if (selectedGeneral.CurrentCityCenter != null)
+            {
+                currentCityCenter = selectedGeneral.CurrentCityCenter;
+                isActive = true;
+
+                return;
+            }
+        }
+        
+        // Fallback to Horse if no selected general
         Horse horse = FindFirstObjectByType<Horse>();
         if (horse != null && horse.CurrentCityCenter != null)
         {
             currentCityCenter = horse.CurrentCityCenter;
             isActive = true;
-            Debug.Log($"[ButtonController] Found existing city center: {currentCityCenter.Province?.provinceName}");
+            Debug.Log($"[ButtonController] Found existing city center from Horse: {currentCityCenter.Province?.provinceName}");
         }
     }
 
@@ -91,25 +105,64 @@ public class InteractionButtonController : MonoBehaviour
 
     private void OnCityCenterEnter(CityCenter cityCenter)
     {
-        Debug.Log($"[ButtonController] CityCenter ENTER -> Active");
+        Debug.Log($"[ButtonController] OnCityCenterEnter called. cityCenter={cityCenter?.Province?.provinceName}, isActive={isActive}");
+        
+        // Only respond if this is the selected general's city center
+        GeneralSelectionManager selectionManager = GeneralSelectionManager.Instance;
+        if (selectionManager != null && selectionManager.SelectedGeneral != null)
+        {
+            var selectedCC = selectionManager.SelectedGeneral.CurrentCityCenter;
+            Debug.Log($"[ButtonController] Filter check: SelectedGeneral.CurrentCityCenter={selectedCC?.Province?.provinceName}, incoming={cityCenter?.Province?.provinceName}, match={selectedCC == cityCenter}");
+            if (selectedCC != cityCenter)
+            {
+                Debug.Log($"[ButtonController] REJECTED - not from selected general");
+                return;
+            }
+        }
+        else
+        {
+            Debug.Log($"[ButtonController] No selection manager or no selected general - accepting event");
+        }
+        
+        Debug.Log($"[ButtonController] CityCenter ENTER -> isActive=true");
         currentCityCenter = cityCenter;
         isActive = true;
     }
 
     private void OnCityCenterExit(CityCenter cityCenter)
     {
+        Debug.Log($"[ButtonController] OnCityCenterExit called. exitingCC={cityCenter?.Province?.provinceName}, currentCC={currentCityCenter?.Province?.provinceName}, isActive={isActive}");
+        
+        // Only respond if this affects the selected general
+        GeneralSelectionManager selectionManager = GeneralSelectionManager.Instance;
+        if (selectionManager != null && selectionManager.SelectedGeneral != null)
+        {
+            var selectedCC = selectionManager.SelectedGeneral.CurrentCityCenter;
+            Debug.Log($"[ButtonController] EXIT filter: SelectedGeneral.CurrentCityCenter={selectedCC?.Province?.provinceName}");
+            if (selectedCC != null)
+            {
+                Debug.Log($"[ButtonController] EXIT SKIPPED - selected general still on a city center");
+                return;
+            }
+        }
+        
         if (currentCityCenter == cityCenter)
         {
-            Debug.Log($"[ButtonController] CityCenter EXIT -> Inactive");
+            Debug.Log($"[ButtonController] CityCenter EXIT -> isActive=false");
             currentCityCenter = null;
             isActive = false;
+        }
+        else
+        {
+            Debug.Log($"[ButtonController] EXIT ignored - different city center");
         }
     }
 
     private void OnPanelClosed()
     {
-        if (currentCityCenter != null)
-            isActive = true;
+        Debug.Log($"[ButtonController] OnPanelClosed called. isActive={isActive}, currentCC={currentCityCenter?.Province?.provinceName}");
+        TryGetCurrentCityCenter();
+        Debug.Log($"[ButtonController] After TryGetCurrentCityCenter: isActive={isActive}, currentCC={currentCityCenter?.Province?.provinceName}");
     }
 
     private void OnButtonClicked()
@@ -119,6 +172,7 @@ public class InteractionButtonController : MonoBehaviour
 
     private void TriggerInteraction()
     {
+        Debug.Log($"[ButtonController] TriggerInteraction called. isActive={isActive}, currentCC={currentCityCenter?.Province?.provinceName}");
         if (currentCityCenter == null || currentCityCenter.Province == null)
         {
             Debug.LogWarning("[ButtonController] No valid city center!");
@@ -126,6 +180,7 @@ public class InteractionButtonController : MonoBehaviour
         }
         
         isActive = false;
+        Debug.Log($"[ButtonController] TriggerInteraction -> isActive=false");
         ProvinceModel province = currentCityCenter.Province;
         
         if (currentCityCenter.IsOwnedByPlayer())

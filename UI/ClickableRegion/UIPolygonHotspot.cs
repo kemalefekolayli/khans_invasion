@@ -51,13 +51,13 @@ public class UIPolygonHotspot : MonoBehaviour, IPointerClickHandler, ICanvasRayc
     private static void OnPanelClosed()
     {
         currentProvince = null;
-        Debug.Log("[UIPolygonHotspot] Province cleared (panel closed)");
+
     }
 
     private static void OnCityCenterExit(CityCenter cityCenter)
     {
         currentProvince = null;
-        Debug.Log("[UIPolygonHotspot] Province cleared (city center exit)");
+
     }
 
     public bool IsRaycastLocationValid(Vector2 screenPoint, Camera eventCamera)
@@ -106,6 +106,16 @@ public class UIPolygonHotspot : MonoBehaviour, IPointerClickHandler, ICanvasRayc
             if (playerNation == null)
             {
                 Debug.LogWarning("[UIPolygonHotspot] PlayerNation not found!");
+                return;
+            }
+        }
+        
+        if (builder == null)
+        {
+            builder = Builder.Instance;
+            if (builder == null)
+            {
+                Debug.LogWarning("[UIPolygonHotspot] Builder not found!");
                 return;
             }
         }

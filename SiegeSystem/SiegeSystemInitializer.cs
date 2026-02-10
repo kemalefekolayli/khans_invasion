@@ -80,7 +80,7 @@ public class SiegeSystemInitializer : MonoBehaviour
         
         if (logInitialization)
         {
-            Debug.Log($"[SiegeSystemInitializer] ✓ Added SiegeOverlayController to {initialized} provinces");
+
         }
     }
 }

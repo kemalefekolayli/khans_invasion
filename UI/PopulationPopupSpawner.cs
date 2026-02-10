@@ -41,7 +41,7 @@ public class PopulationPopupSpawner : MonoBehaviour
     
     private void Start()
     {
-        Debug.Log("✓ PopulationPopupSpawner initialized");
+
     }
     
     /// <summary>

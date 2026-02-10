@@ -25,12 +25,13 @@ public class BarracksMenu : MonoBehaviour
 
     private void OpenBarracksMenu()
     {
-        Debug.Log("Barracks Menu Opened 123");
+        Debug.Log($"[BarracksMenu] OPENED. barracksMenuUI={barracksMenuUI != null}");
         SetActive(barracksMenuUI, true);
     }
 
     private void CloseBarracksMenu(CityCenter cityCenter)
     {
+        Debug.Log($"[BarracksMenu] CLOSED on CityExit: {cityCenter?.Province?.provinceName}");
         SetActive(barracksMenuUI, false);
     }
 
