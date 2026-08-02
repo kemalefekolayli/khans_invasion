@@ -1,0 +1,879 @@
+{
+    "assignments": [
+        {
+            "provinceId": 95,
+            "nationId": 4,
+            "provinceName": "Province_95"
+        },
+        {
+            "provinceId": 13,
+            "nationId": 3,
+            "provinceName": "Province_13"
+        },
+        {
+            "provinceId": 168,
+            "nationId": 20,
+            "provinceName": "Province_168"
+        },
+        {
+            "provinceId": 111,
+            "nationId": 16,
+            "provinceName": "Province_111"
+        },
+        {
+            "provinceId": 104,
+            "nationId": 0,
+            "provinceName": "Province_104"
+        },
+        {
+            "provinceId": 134,
+            "nationId": 20,
+            "provinceName": "Province_134"
+        },
+        {
+            "provinceId": 53,
+            "nationId": 1,
+            "provinceName": "Province_53"
+        },
+        {
+            "provinceId": 21,
+            "nationId": 10,
+            "provinceName": "Province_21"
+        },
+        {
+            "provinceId": 133,
+            "nationId": 5,
+            "provinceName": "Province_133"
+        },
+        {
+            "provinceId": 2,
+            "nationId": 12,
+            "provinceName": "Province_2"
+        },
+        {
+            "provinceId": 172,
+            "nationId": 20,
+            "provinceName": "Province_172"
+        },
+        {
+            "provinceId": 170,
+            "nationId": 18,
+            "provinceName": "Province_170"
+        },
+        {
+            "provinceId": 90,
+            "nationId": 15,
+            "provinceName": "Province_90"
+        },
+        {
+            "provinceId": 126,
+            "nationId": 16,
+            "provinceName": "Province_126"
+        },
+        {
+            "provinceId": 140,
+            "nationId": 6,
+            "provinceName": "Province_140"
+        },
+        {
+            "provinceId": 148,
+            "nationId": 6,
+            "provinceName": "Province_148"
+        },
+        {
+            "provinceId": 83,
+            "nationId": 7,
+            "provinceName": "Province_83"
+        },
+        {
+            "provinceId": 61,
+            "nationId": 4,
+            "provinceName": "Province_61"
+        },
+        {
+            "provinceId": 1,
+            "nationId": 10,
+            "provinceName": "Province_1"
+        },
+        {
+            "provinceId": 79,
+            "nationId": 14,
+            "provinceName": "Province_79"
+        },
+        {
+            "provinceId": 8,
+            "nationId": 9,
+            "provinceName": "Province_8"
+        },
+        {
+            "provinceId": 29,
+            "nationId": 11,
+            "provinceName": "Province_29"
+        },
+        {
+            "provinceId": 118,
+            "nationId": 5,
+            "provinceName": "Province_118"
+        },
+        {
+            "provinceId": 106,
+            "nationId": 7,
+            "provinceName": "Province_106"
+        },
+        {
+            "provinceId": 14,
+            "nationId": 9,
+            "provinceName": "Province_14"
+        },
+        {
+            "provinceId": 41,
+            "nationId": 3,
+            "provinceName": "Province_41"
+        },
+        {
+            "provinceId": 6,
+            "nationId": 9,
+            "provinceName": "Province_6"
+        },
+        {
+            "provinceId": 174,
+            "nationId": 20,
+            "provinceName": "Province_174"
+        },
+        {
+            "provinceId": 99,
+            "nationId": 1,
+            "provinceName": "Province_99"
+        },
+        {
+            "provinceId": 127,
+            "nationId": 5,
+            "provinceName": "Province_127"
+        },
+        {
+            "provinceId": 56,
+            "nationId": 7,
+            "provinceName": "Province_56"
+        },
+        {
+            "provinceId": 143,
+            "nationId": 19,
+            "provinceName": "Province_143"
+        },
+        {
+            "provinceId": 163,
+            "nationId": 6,
+            "provinceName": "Province_163"
+        },
+        {
+            "provinceId": 20,
+            "nationId": 9,
+            "provinceName": "Province_20"
+        },
+        {
+            "provinceId": 55,
+            "nationId": 1,
+            "provinceName": "Province_55"
+        },
+        {
+            "provinceId": 42,
+            "nationId": 11,
+            "provinceName": "Province_42"
+        },
+        {
+            "provinceId": 124,
+            "nationId": 6,
+            "provinceName": "Province_124"
+        },
+        {
+            "provinceId": 68,
+            "nationId": 4,
+            "provinceName": "Province_68"
+        },
+        {
+            "provinceId": 110,
+            "nationId": 0,
+            "provinceName": "Province_110"
+        },
+        {
+            "provinceId": 136,
+            "nationId": 20,
+            "provinceName": "Province_136"
+        },
+        {
+            "provinceId": 129,
+            "nationId": 5,
+            "provinceName": "Province_129"
+        },
+        {
+            "provinceId": 165,
+            "nationId": 6,
+            "provinceName": "Province_165"
+        },
+        {
+            "provinceId": 62,
+            "nationId": 7,
+            "provinceName": "Province_62"
+        },
+        {
+            "provinceId": 142,
+            "nationId": 16,
+            "provinceName": "Province_142"
+        },
+        {
+            "provinceId": 88,
+            "nationId": 17,
+            "provinceName": "Province_88"
+        },
+        {
+            "provinceId": 128,
+            "nationId": 15,
+            "provinceName": "Province_128"
+        },
+        {
+            "provinceId": 119,
+            "nationId": 15,
+            "provinceName": "Province_119"
+        },
+        {
+            "provinceId": 26,
+            "nationId": 3,
+            "provinceName": "Province_26"
+        },
+        {
+            "provinceId": 147,
+            "nationId": 20,
+            "provinceName": "Province_147"
+        },
+        {
+            "provinceId": 144,
+            "nationId": 19,
+            "provinceName": "Province_144"
+        },
+        {
+            "provinceId": 84,
+            "nationId": 7,
+            "provinceName": "Province_84"
+        },
+        {
+            "provinceId": 157,
+            "nationId": 6,
+            "provinceName": "Province_157"
+        },
+        {
+            "provinceId": 69,
+            "nationId": 11,
+            "provinceName": "Province_69"
+        },
+        {
+            "provinceId": 105,
+            "nationId": 5,
+            "provinceName": "Province_105"
+        },
+        {
+            "provinceId": 141,
+            "nationId": 20,
+            "provinceName": "Province_141"
+        },
+        {
+            "provinceId": 137,
+            "nationId": 16,
+            "provinceName": "Province_137"
+        },
+        {
+            "provinceId": 151,
+            "nationId": 20,
+            "provinceName": "Province_151"
+        },
+        {
+            "provinceId": 3,
+            "nationId": 12,
+            "provinceName": "Province_3"
+        },
+        {
+            "provinceId": 131,
+            "nationId": 5,
+            "provinceName": "Province_131"
+        },
+        {
+            "provinceId": 164,
+            "nationId": 18,
+            "provinceName": "Province_164"
+        },
+        {
+            "provinceId": 146,
+            "nationId": 20,
+            "provinceName": "Province_146"
+        },
+        {
+            "provinceId": 37,
+            "nationId": 11,
+            "provinceName": "Province_37"
+        },
+        {
+            "provinceId": 15,
+            "nationId": 3,
+            "provinceName": "Province_15"
+        },
+        {
+            "provinceId": 10,
+            "nationId": 12,
+            "provinceName": "Province_10"
+        },
+        {
+            "provinceId": 169,
+            "nationId": 20,
+            "provinceName": "Province_169"
+        },
+        {
+            "provinceId": 152,
+            "nationId": 19,
+            "provinceName": "Province_152"
+        },
+        {
+            "provinceId": 75,
+            "nationId": 14,
+            "provinceName": "Province_75"
+        },
+        {
+            "provinceId": 59,
+            "nationId": 1,
+            "provinceName": "Province_59"
+        },
+        {
+            "provinceId": 155,
+            "nationId": 19,
+            "provinceName": "Province_155"
+        },
+        {
+            "provinceId": 153,
+            "nationId": 19,
+            "provinceName": "Province_153"
+        },
+        {
+            "provinceId": 139,
+            "nationId": 5,
+            "provinceName": "Province_139"
+        },
+        {
+            "provinceId": 33,
+            "nationId": 11,
+            "provinceName": "Province_33"
+        },
+        {
+            "provinceId": 86,
+            "nationId": 17,
+            "provinceName": "Province_86"
+        },
+        {
+            "provinceId": 85,
+            "nationId": 4,
+            "provinceName": "Province_85"
+        },
+        {
+            "provinceId": 173,
+            "nationId": 20,
+            "provinceName": "Province_173"
+        },
+        {
+            "provinceId": 122,
+            "nationId": 5,
+            "provinceName": "Province_122"
+        },
+        {
+            "provinceId": 94,
+            "nationId": 4,
+            "provinceName": "Province_94"
+        },
+        {
+            "provinceId": 11,
+            "nationId": 12,
+            "provinceName": "Province_11"
+        },
+        {
+            "provinceId": 70,
+            "nationId": 7,
+            "provinceName": "Province_70"
+        },
+        {
+            "provinceId": 73,
+            "nationId": 14,
+            "provinceName": "Province_73"
+        },
+        {
+            "provinceId": 107,
+            "nationId": 7,
+            "provinceName": "Province_107"
+        },
+        {
+            "provinceId": 135,
+            "nationId": 16,
+            "provinceName": "Province_135"
+        },
+        {
+            "provinceId": 82,
+            "nationId": 1,
+            "provinceName": "Province_82"
+        },
+        {
+            "provinceId": 171,
+            "nationId": 20,
+            "provinceName": "Province_171"
+        },
+        {
+            "provinceId": 51,
+            "nationId": 11,
+            "provinceName": "Province_51"
+        },
+        {
+            "provinceId": 113,
+            "nationId": 0,
+            "provinceName": "Province_113"
+        },
+        {
+            "provinceId": 48,
+            "nationId": 3,
+            "provinceName": "Province_48"
+        },
+        {
+            "provinceId": 93,
+            "nationId": 17,
+            "provinceName": "Province_93"
+        },
+        {
+            "provinceId": 35,
+            "nationId": 3,
+            "provinceName": "Babylon"
+        },
+        {
+            "provinceId": 30,
+            "nationId": 2,
+            "provinceName": "Palestine"
+        },
+        {
+            "provinceId": 138,
+            "nationId": 16,
+            "provinceName": "Province_138"
+        },
+        {
+            "provinceId": 92,
+            "nationId": 0,
+            "provinceName": "Province_92"
+        },
+        {
+            "provinceId": 117,
+            "nationId": 5,
+            "provinceName": "Province_117"
+        },
+        {
+            "provinceId": 27,
+            "nationId": 8,
+            "provinceName": "Province_27"
+        },
+        {
+            "provinceId": 103,
+            "nationId": 5,
+            "provinceName": "Province_103"
+        },
+        {
+            "provinceId": 19,
+            "nationId": 2,
+            "provinceName": "Province_19"
+        },
+        {
+            "provinceId": 24,
+            "nationId": 8,
+            "provinceName": "Province_24"
+        },
+        {
+            "provinceId": 123,
+            "nationId": 15,
+            "provinceName": "Province_123"
+        },
+        {
+            "provinceId": 46,
+            "nationId": 1,
+            "provinceName": "Syria"
+        },
+        {
+            "provinceId": 108,
+            "nationId": 15,
+            "provinceName": "Province_108"
+        },
+        {
+            "provinceId": 76,
+            "nationId": 14,
+            "provinceName": "Province_76"
+        },
+        {
+            "provinceId": 38,
+            "nationId": 8,
+            "provinceName": "Province_38"
+        },
+        {
+            "provinceId": 115,
+            "nationId": 20,
+            "provinceName": "Province_115"
+        },
+        {
+            "provinceId": 45,
+            "nationId": 3,
+            "provinceName": "Province_45"
+        },
+        {
+            "provinceId": 114,
+            "nationId": 16,
+            "provinceName": "Province_114"
+        },
+        {
+            "provinceId": 145,
+            "nationId": 6,
+            "provinceName": "Province_145"
+        },
+        {
+            "provinceId": 116,
+            "nationId": 5,
+            "provinceName": "Province_116"
+        },
+        {
+            "provinceId": 32,
+            "nationId": 3,
+            "provinceName": "Inner Iraq"
+        },
+        {
+            "provinceId": 34,
+            "nationId": 3,
+            "provinceName": "Province_34"
+        },
+        {
+            "provinceId": 78,
+            "nationId": 1,
+            "provinceName": "Province_78"
+        },
+        {
+            "provinceId": 31,
+            "nationId": 3,
+            "provinceName": "Province_31"
+        },
+        {
+            "provinceId": 77,
+            "nationId": 7,
+            "provinceName": "Province_77"
+        },
+        {
+            "provinceId": 12,
+            "nationId": 12,
+            "provinceName": "Province_12"
+        },
+        {
+            "provinceId": 150,
+            "nationId": 6,
+            "provinceName": "Province_150"
+        },
+        {
+            "provinceId": 72,
+            "nationId": 1,
+            "provinceName": "Province_72"
+        },
+        {
+            "provinceId": 44,
+            "nationId": 3,
+            "provinceName": "Province_44"
+        },
+        {
+            "provinceId": 74,
+            "nationId": 1,
+            "provinceName": "Province_74"
+        },
+        {
+            "provinceId": 7,
+            "nationId": 0,
+            "provinceName": "Province_7"
+        },
+        {
+            "provinceId": 130,
+            "nationId": 6,
+            "provinceName": "Province_130"
+        },
+        {
+            "provinceId": 81,
+            "nationId": 0,
+            "provinceName": "Province_81"
+        },
+        {
+            "provinceId": 50,
+            "nationId": 3,
+            "provinceName": "Province_50"
+        },
+        {
+            "provinceId": 120,
+            "nationId": 6,
+            "provinceName": "Province_120"
+        },
+        {
+            "provinceId": 156,
+            "nationId": 19,
+            "provinceName": "Province_156"
+        },
+        {
+            "provinceId": 166,
+            "nationId": 20,
+            "provinceName": "Province_166"
+        },
+        {
+            "provinceId": 98,
+            "nationId": 17,
+            "provinceName": "Province_98"
+        },
+        {
+            "provinceId": 4,
+            "nationId": 9,
+            "provinceName": "Province_4"
+        },
+        {
+            "provinceId": 57,
+            "nationId": 1,
+            "provinceName": "Province_57"
+        },
+        {
+            "provinceId": 158,
+            "nationId": 20,
+            "provinceName": "Province_158"
+        },
+        {
+            "provinceId": 23,
+            "nationId": 2,
+            "provinceName": "Province_23"
+        },
+        {
+            "provinceId": 132,
+            "nationId": 5,
+            "provinceName": "Province_132"
+        },
+        {
+            "provinceId": 54,
+            "nationId": 11,
+            "provinceName": "Province_54"
+        },
+        {
+            "provinceId": 43,
+            "nationId": 1,
+            "provinceName": "Levant"
+        },
+        {
+            "provinceId": 100,
+            "nationId": 5,
+            "provinceName": "Province_100"
+        },
+        {
+            "provinceId": 9,
+            "nationId": 10,
+            "provinceName": "Province_9"
+        },
+        {
+            "provinceId": 97,
+            "nationId": 5,
+            "provinceName": "Province_97"
+        },
+        {
+            "provinceId": 91,
+            "nationId": 15,
+            "provinceName": "Province_91"
+        },
+        {
+            "provinceId": 47,
+            "nationId": 3,
+            "provinceName": "Province_47"
+        },
+        {
+            "provinceId": 112,
+            "nationId": 5,
+            "provinceName": "Province_112"
+        },
+        {
+            "provinceId": 87,
+            "nationId": 0,
+            "provinceName": "Province_87"
+        },
+        {
+            "provinceId": 160,
+            "nationId": 20,
+            "provinceName": "Province_160"
+        },
+        {
+            "provinceId": 65,
+            "nationId": 11,
+            "provinceName": "Province_65"
+        },
+        {
+            "provinceId": 5,
+            "nationId": 10,
+            "provinceName": "Province_5"
+        },
+        {
+            "provinceId": 80,
+            "nationId": 4,
+            "provinceName": "Province_80"
+        },
+        {
+            "provinceId": 162,
+            "nationId": 6,
+            "provinceName": "Province_162"
+        },
+        {
+            "provinceId": 109,
+            "nationId": 15,
+            "provinceName": "Province_109"
+        },
+        {
+            "provinceId": 36,
+            "nationId": 8,
+            "provinceName": "Province_36"
+        },
+        {
+            "provinceId": 121,
+            "nationId": 6,
+            "provinceName": "Province_121"
+        },
+        {
+            "provinceId": 52,
+            "nationId": 7,
+            "provinceName": "Province_52"
+        },
+        {
+            "provinceId": 40,
+            "nationId": 3,
+            "provinceName": "Province_40"
+        },
+        {
+            "provinceId": 96,
+            "nationId": 4,
+            "provinceName": "Province_96"
+        },
+        {
+            "provinceId": 125,
+            "nationId": 5,
+            "provinceName": "Province_125"
+        },
+        {
+            "provinceId": 60,
+            "nationId": 14,
+            "provinceName": "Province_60"
+        },
+        {
+            "provinceId": 102,
+            "nationId": 15,
+            "provinceName": "Province_102"
+        },
+        {
+            "provinceId": 161,
+            "nationId": 20,
+            "provinceName": "Province_161"
+        },
+        {
+            "provinceId": 66,
+            "nationId": 14,
+            "provinceName": "Province_66"
+        },
+        {
+            "provinceId": 16,
+            "nationId": 2,
+            "provinceName": "Province_16"
+        },
+        {
+            "provinceId": 22,
+            "nationId": 10,
+            "provinceName": "Province_22"
+        },
+        {
+            "provinceId": 25,
+            "nationId": 3,
+            "provinceName": "Province_25"
+        },
+        {
+            "provinceId": 175,
+            "nationId": 18,
+            "provinceName": "Province_175"
+        },
+        {
+            "provinceId": 71,
+            "nationId": 1,
+            "provinceName": "Province_71"
+        },
+        {
+            "provinceId": 89,
+            "nationId": 0,
+            "provinceName": "Province_89"
+        },
+        {
+            "provinceId": 49,
+            "nationId": 14,
+            "provinceName": "Province_49"
+        },
+        {
+            "provinceId": 154,
+            "nationId": 16,
+            "provinceName": "Province_154"
+        },
+        {
+            "provinceId": 28,
+            "nationId": 8,
+            "provinceName": "Province_28"
+        },
+        {
+            "provinceId": 167,
+            "nationId": 18,
+            "provinceName": "Province_167"
+        },
+        {
+            "provinceId": 159,
+            "nationId": 19,
+            "provinceName": "Province_159"
+        },
+        {
+            "provinceId": 64,
+            "nationId": 14,
+            "provinceName": "Province_64"
+        },
+        {
+            "provinceId": 58,
+            "nationId": 7,
+            "provinceName": "Province_58"
+        },
+        {
+            "provinceId": 63,
+            "nationId": 7,
+            "provinceName": "Province_63"
+        },
+        {
+            "provinceId": 17,
+            "nationId": 9,
+            "provinceName": "Province_17"
+        },
+        {
+            "provinceId": 101,
+            "nationId": 7,
+            "provinceName": "Province_101"
+        },
+        {
+            "provinceId": 18,
+            "nationId": 12,
+            "provinceName": "Province_18"
+        },
+        {
+            "provinceId": 67,
+            "nationId": 14,
+            "provinceName": "Province_67"
+        },
+        {
+            "provinceId": 149,
+            "nationId": 20,
+            "provinceName": "Province_149"
+        },
+        {
+            "provinceId": 39,
+            "nationId": 3,
+            "provinceName": "Province_39"
+        }
+    ]
+}

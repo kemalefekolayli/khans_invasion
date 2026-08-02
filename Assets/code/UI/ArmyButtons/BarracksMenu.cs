@@ -1,0 +1,50 @@
+using UnityEngine;
+
+public class BarracksMenu : MonoBehaviour
+{
+    [SerializeField] private GameObject barracksMenuUI;
+
+    private ProvinceModel currentProvince;
+    void Start()
+    {
+        SetActive(barracksMenuUI, false);
+    }
+    void OnEnable()
+    {
+        GameEvents.OnBarrackMenuOpened += OpenBarracksMenu;
+        GameEvents.OnCityCenterExit += CloseBarracksMenu;
+        GameEvents.OnProvinceEnter += (ProvinceModel province) => currentProvince = province;
+    }
+
+    void OnDisable()
+    {
+        GameEvents.OnBarrackMenuOpened -= OpenBarracksMenu;
+        GameEvents.OnCityCenterExit -= CloseBarracksMenu;
+        GameEvents.OnProvinceEnter -= (ProvinceModel province) => currentProvince = province;
+    }
+
+    private void OpenBarracksMenu()
+    {
+        GameLog.Log(GameLogCategory.Core, $"[BarracksMenu] OPENED. barracksMenuUI={barracksMenuUI != null}");
+        SetActive(barracksMenuUI, true);
+    }
+
+    private void CloseBarracksMenu(CityCenter cityCenter)
+    {
+        GameLog.Log(GameLogCategory.Core, $"[BarracksMenu] CLOSED on CityExit: {cityCenter?.Province?.provinceName}");
+        SetActive(barracksMenuUI, false);
+    }
+
+    private void SetActive(GameObject obj, bool active)
+    {
+        if (obj != null)
+        {
+            obj.SetActive(active);
+
+        }
+        else
+        {
+            GameLog.Warning(GameLogCategory.Core, "[BuilderOverlay] GameObject reference is NULL!");
+        }
+    }
+}

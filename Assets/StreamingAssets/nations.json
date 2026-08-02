@@ -1,0 +1,151 @@
+{
+  "nations": [
+    {
+      "id": 0,
+      "name": "Player Horde",
+      "color": "#800020",
+      "aggression": "player",
+      "description": "Your nomadic horde"
+    },
+    {
+      "id": 1,
+      "name": "Eastern Roman Empire",
+      "color": "#4B0082",
+      "aggression": "high",
+      "description": "Byzantine Empire"
+    },
+    {
+      "id": 2,
+      "name": "Arab Tribes",
+      "color": "#90EE90",
+      "aggression": "medium",
+      "description": "Arabian Peninsula tribes"
+    },
+    {
+      "id": 3,
+      "name": "Persian Empire",
+      "color": "#8B4513",
+      "aggression": "high",
+      "description": "Persia"
+    },
+    {
+      "id": 4,
+      "name": "Caucasian Empire",
+      "color": "#DC143C",
+      "aggression": "medium",
+      "description": "Caucasus region"
+    },
+    {
+      "id": 5,
+      "name": "Astrakhan",
+      "color": "#4169E1",
+      "aggression": "low",
+      "description": "Astrakhan Khanate"
+    },
+    {
+      "id": 6,
+      "name": "Permian Kingdom",
+      "color": "#FF69B4",
+      "aggression": "low",
+      "description": "Permian lands"
+    },
+    {
+      "id": 7,
+      "name": "Scythian Kingdom",
+      "color": "#006400",
+      "aggression": "medium",
+      "description": "Scythian territories"
+    },
+    {
+      "id": 8,
+      "name": "Khorasan",
+      "color": "#FF1493",
+      "aggression": "medium",
+      "description": "Khorasan region"
+    },
+    {
+      "id": 9,
+      "name": "Urdu",
+      "color": "#800080",
+      "aggression": "medium",
+      "description": "Urdu territories"
+    },
+    {
+      "id": 10,
+      "name": "Gujarat",
+      "color": "#00FF00",
+      "aggression": "low",
+      "description": "Gujarat region"
+    },
+    {
+      "id": 11,
+      "name": "Kashmir",
+      "color": "#4682B4",
+      "aggression": "low",
+      "description": "Kashmir region"
+    },
+    {
+      "id": 12,
+      "name": "Delhi",
+      "color": "#00CED1",
+      "aggression": "high",
+      "description": "Delhi Sultanate"
+    },
+    {
+      "id": 13,
+      "name": "Chagatai",
+      "color": "#483D8B",
+      "aggression": "high",
+      "description": "Chagatai Khanate"
+    },
+    {
+      "id": 14,
+      "name": "Kashghar",
+      "color": "#ADFF2F",
+      "aggression": "low",
+      "description": "Kashgar region"
+    },
+    {
+      "id": 15,
+      "name": "Kara Khan",
+      "color": "#FF0000",
+      "aggression": "medium",
+      "description": "Karakhanid Khanate"
+    },
+    {
+      "id": 16,
+      "name": "Uyghur Khanate",
+      "color": "#87CEEB",
+      "aggression": "medium",
+      "description": "Uyghur territories"
+    },
+    {
+      "id": 17,
+      "name": "Uzbek Khanate",
+      "color": "#FFB6C1",
+      "aggression": "medium",
+      "description": "Uzbek lands"
+    },
+    {
+      "id": 18,
+      "name": "Kazak Khanate",
+      "color": "#8B4789",
+      "aggression": "medium",
+      "description": "Kazakh territories"
+    },
+    {
+      "id": 19,
+      "name": "Kyrgyz Khanate",
+      "color": "#9370DB",
+      "aggression": "medium",
+      "description": "Kyrgyz lands"
+    },
+    {
+      "id": 20,
+      "name": "Russian Confederation",
+      "color": "#696969",
+      "aggression": "high",
+      "description": "Russian principalities"
+    }
+  ]
+}

@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Khan's Invasion — Ticket Board</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --panel: #16213e;
+    --panel2: #0f3460;
+    --accent: #e94560;
+    --accent2: #533483;
+    --text: #eaeaea;
+    --muted: #9aa0b5;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --yellow: #f1c40f;
+    --border: #2a2a4a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 20px;
+    min-height: 100vh;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+  }
+  h1 { font-size: 1.5rem; }
+  h1 span { color: var(--accent); }
+  .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  button {
+    background: var(--panel2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+  }
+  button:hover { background: var(--accent2); }
+  button.primary { background: var(--accent); border-color: var(--accent); }
+  button.primary:hover { background: #c0392b; }
+  button.danger { background: transparent; border-color: var(--red); color: var(--red); }
+  button.danger:hover { background: var(--red); color: #fff; }
+  button.small { padding: 4px 8px; font-size: 0.75rem; }
+
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+  .filters select, .filters input {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+  }
+  .filters label { font-size: 0.8rem; color: var(--muted); }
+
+  .ticket {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent2);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+  }
+  .ticket.done { border-left-color: var(--green); opacity: 0.75; }
+  .ticket.in-progress { border-left-color: var(--yellow); }
+  .ticket-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .ticket-id {
+    font-weight: bold;
+    color: var(--accent);
+    background: rgba(233,69,96,0.15);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+  }
+  .ticket-title { font-size: 1.1rem; font-weight: 600; flex: 1; min-width: 200px; }
+  .ticket-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .badge.phase { background: var(--accent2); }
+  .badge.manual-yes { background: var(--green); color: #000; }
+  .badge.manual-no { background: var(--muted); color: #000; }
+  .badge.status { background: var(--panel2); }
+  .badge.status.done { background: var(--green); color: #000; }
+  .badge.status.in-progress { background: var(--yellow); color: #000; }
+
+  .ticket-body { margin-top: 8px; }
+  .section { margin-bottom: 10px; }
+  .section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .section ul { list-style: none; padding-left: 4px; }
+  .section li {
+    padding: 3px 0 3px 20px;
+    position: relative;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  .section li::before {
+    content: '▸';
+    position: absolute;
+    left: 4px;
+    color: var(--accent);
+  }
+  .section li.checked::before { content: '✓'; color: var(--green); }
+  .section li.checked { color: var(--muted); text-decoration: line-through; }
+  .context-text {
+    font-size: 0.9rem;
+    color: var(--muted);
+    background: var(--panel2);
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    line-height: 1.4;
+  }
+  .files-touched {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: monospace;
+    background: var(--panel2);
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-top: 8px;
+  }
+  .branch {
+    font-size: 0.8rem;
+    color: var(--accent2);
+    font-family: monospace;
+    background: rgba(83,52,131,0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 8px;
+  }
+
+  .ticket-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  /* Edit mode */
+  .edit-mode .ticket { border: 2px dashed var(--accent); }
+  .edit-field {
+    width: 100%;
+    background: var(--panel2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 0.9rem;
+    margin: 2px 0;
+    font-family: inherit;
+  }
+  .edit-field:focus { outline: 2px solid var(--accent); }
+  textarea.edit-field { min-height: 60px; resize: vertical; }
+  .edit-list-item { display: flex; gap: 6px; align-items: center; margin: 3px 0; }
+  .edit-list-item input { flex: 1; }
+  .edit-list-item button { padding: 2px 6px; }
+
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px;
+    font-size: 1rem;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    padding: 12px 18px;
+    border-radius: 8px;
+    display: none;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  #toast.show { display: block; animation: fadeIn 0.3s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+
+  /* Drag handle */
+  .drag-handle { cursor: grab; color: var(--muted); font-size: 1.2rem; padding: 0 6px; user-select: none; }
+  .drag-handle:active { cursor: grabbing; }
+  .ticket.dragging { opacity: 0.4; border: 2px dashed var(--accent); }
+  .ticket.drag-over { border-top: 3px solid var(--accent); }
+
+  @media (max-width: 600px) {
+    body { padding: 10px; }
+    .ticket-title { font-size: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚔️ Khan's Invasion — <span>Ticket Board</span></h1>
+  <div class="header-actions">
+    <button onclick="toggleEditMode()" id="editModeBtn">✏️ Edit Mode</button>
+    <button onclick="addTicket()" class="primary">+ New Ticket</button>
+    <button onclick="exportJSON()">⬇ Export JSON</button>
+    <button onclick="importJSON()">⬆ Import JSON</button>
+    <button onclick="resetToSeed()" class="danger">Reset</button>
+  </div>
+</header>
+
+<div class="filters">
+  <label>Phase:
+    <select id="phaseFilter" onchange="render()">
+      <option value="all">All</option>
+      <option value="0">Phase 0 — Foundation</option>
+      <option value="1">Phase 1 — Correctness</option>
+      <option value="2">Phase 2 — AI Polish</option>
+      <option value="3">Phase 3 — Feature Polish</option>
+      <option value="4">Phase 4 — Visuals</option>
+    </select>
+  </label>
+  <label>Status:
+    <select id="statusFilter" onchange="render()">
+      <option value="all">All</option>
+      <option value="todo">To Do</option>
+      <option value="in-progress">In Progress</option>
+      <option value="done">Done</option>
+    </select>
+  </label>
+  <label>Manual Check:
+    <select id="manualFilter" onchange="render()">
+      <option value="all">All</option>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+  </label>
+  <label>Search:
+    <input type="text" id="searchInput" placeholder="Search tickets..." oninput="render()">
+  </label>
+</div>
+
+<div id="ticketList"></div>
+<div id="toast"></div>
+
+<input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<script>
+// ===== DATA MODEL =====
+// Each ticket:
+// {
+//   id: "T0.1",
+//   title: "...",
+//   phase: 0,
+//   status: "todo" | "in-progress" | "done",
+//   manualCheck: true | false,
+//   context: "...",
+//   mustHave: ["...", "..."],
+//   niceToHave: ["...", "..."],
+//   doneWhen: ["...", "..."],
+//   filesTouched: ["...", "..."],
+//   branch: "feature/t0.1-..."
+// }
+
+const STORAGE_KEY = 'khans_ticket_board_v1';
+
+const SEED_TICKETS = [
+  {
+    id: "T0.1",
+    title: "Initialize Git Repo & Connect to GitHub",
+    phase: 0,
+    status: "todo",
+    manualCheck: true,
+    context: "Local project is not a git repo. Remote https://github.com/kemalefekolayli/khans_invasion exists with a master branch.",
+    mustHave: [
+      "git init in project root",
+      "Add Unity .gitignore (Library/, Temp/, obj/, Logs/, UserSettings/, *.csproj, *.sln, replay logs)",
+      "Create main branch from current state",
+      "Add remote, fetch master, reconcile (keep local as main, or align with remote master)",
+      "Create prod branch (empty, for stable releases)",
+      "Initial commit on main"
+    ],
+    niceToHave: [
+      "A docs/ folder with the ticket format + workflow doc"
+    ],
+    doneWhen: [
+      "git log shows initial commit on main",
+      "git branch -a shows main + prod",
+      "git remote -v shows the GitHub remote",
+      "Pushing to remote works"
+    ],
+    filesTouched: [".gitignore", "docs/"],
+    branch: "feature/t0.1-git-init"
+  },
+  {
+    id: "T0.2",
+    title: "Build Autoplay Test Harness (SimulationController)",
+    phase: 0,
+    status: "todo",
+    manualCheck: false,
+    context: "No automated testing exists. We need a headless harness that auto-advances turns and exercises systems.",
+    mustHave: [
+      "A SimulationController MonoBehaviour (in a dedicated test scene or boot flag) that auto-calls TurnManager.Instance.EndPlayerTurn() each frame/tick",
+      "Runs in two modes: AI-only (no player input) and scripted-player (drives player armies/generals via public APIs)",
+      "A 10-turn smoke test that asserts: no null refs, no negative gold/pop, no stuck states, no exceptions",
+      "A pass/fail report written to a log file"
+    ],
+    niceToHave: [
+      "Configurable turn count",
+      "Per-turn snapshot logging"
+    ],
+    doneWhen: [
+      "Harness runs 10 turns in AI-only mode without errors",
+      "Report file generated"
+    ],
+    filesTouched: ["Assets/code/Testing/SimulationController.cs"],
+    branch: "feature/t0.2-autoplay-harness"
+  },
+  {
+    id: "T1.1",
+    title: "Fix Player Raid Loot Penalty",
+    phase: 1,
+    status: "todo",
+    manualCheck: true,
+    context: "RaidManager.GetRaidEffectiveness() applies the AI multiplier (0.4) to player raids too. Players get 40% of calculated loot.",
+    mustHave: [
+      "Player raids (ExecuteRaid(ProvinceModel, General)) use full loot (no AI multiplier)",
+      "AI raids (ExecuteRaid(ProvinceModel, Army)) still use AIRaidEffectiveness",
+      "Add a PlayerRaidEffectiveness field (default 1.0) to AISettings or a new RaidSettings SO"
+    ],
+    niceToHave: [],
+    doneWhen: [
+      "Autoplay: scripted player raid on 1000-loot province with 1000 troops yields ~60% loot (not 24%)"
+    ],
+    filesTouched: ["Assets/code/RaidSystem/RaidManager.cs", "Assets/code/AI/AISettings.cs"],
+    branch: "feature/t1.1-fix-player-raid-loot"
+  },
+  {
+    id: "T1.2",
+    title: "Nation-Agnostic Siege/Conquest API",
+    phase: 1,
+    status: "todo",
+    manualCheck: true,
+    context: "SiegeManager is player-only. AI's TryExecuteAIConquest bypasses sieges entirely and directly transfers provinces. AI cannot take fortress cities or do multi-turn sieges.",
+    mustHave: [
+      "Refactor SiegeManager so conquests can be assigned to any NationModel (not just PlayerNation)",
+      "Add an army-based siege entry point (AI armies don't have General components)",
+      "Wire AINationController.ExecuteAttackingAction to use the siege system when PreferredAction == SiegeProvince",
+      "Remove the 'execution waits for army-based manager API' dead code"
+    ],
+    niceToHave: [],
+    doneWhen: [
+      "Autoplay: an AI nation successfully sieges and conquers a fortress province over multiple turns"
+    ],
+    filesTouched: ["Assets/code/SiegeSystem/SiegeManager.cs", "Assets/code/AI/AINationController.cs"],
+    branch: "feature/t1.2-nation-agnostic-siege"
+  },
+  {
+    id: "T1.3",
+    title: "AI Economies Actually Grow",
+    phase: 1,
+    status: "todo",
+    manualCheck: false,
+    context: "PopulationProcessor only grows player provinces by default. AI RecalculateStats re-reads static values — AI pop/income never grow. Two separate income systems exist.",
+    mustHave: [
+      "Extend PopulationProcessor to grow AI provinces (or add an AI population processor)",
+      "Unify income: AI nations use the same income calculation as the player (or a shared IncomeCalculator)",
+      "AI RecalculateStats reflects growing population/income"
+    ],
+    niceToHave: [],
+    doneWhen: [
+      "Autoplay: after 20 turns, AI nation population/income has measurably increased from start"
+    ],
+    filesTouched: ["Assets/code/TurnSystem/PopulationProcessor.cs", "Assets/code/AI/AINationData.cs"],
+    branch: "feature/t1.3-ai-economy-growth"
+  },
+  {
+    id: "T1.4",
+    title: "Fix Quest System",
+    phase: 1,
+    status: "todo",
+    manualCheck: true,
+    context: "GameEvents.NationDestroyed never fires (quest impossible). Quest_1 targetCount=1 but says 'Raid 3'. Quest_6 reward is MoveCapital but description says gold. New generals spawned via raw Instantiate bypass setup pipeline.",
+    mustHave: [
+      "Fire NationDestroyed when a nation loses all provinces",
+      "Fix quest asset data (Quest_1 targetCount=3, Quest_6 reward description/type)",
+      "Route quest-reward generals through the proper spawn pipeline",
+      "Add quest progress for siege-based army defeats (currently only ArmyBattleManager fires OnArmyDefeated)"
+    ],
+    niceToHave: [],
+    doneWhen: [
+      "Autoplay: scripted player completes Quest_1 (raid 3 provinces) and Quest_6 (destroy a nation); rewards applied correctly"
+    ],
+    filesTouched: ["Assets/code/QuestSystem/QuestManager.cs", "Assets/Quests/*.asset", "Assets/code/Events/GameEvents.cs"],
+    branch: "feature/t1.4-fix-quests"
+  },
+  {
+    id: "T2.1",
+    title: "AI Personality System (Aggression-Only, Open/Closed)",
+    phase: 2,
+    status: "todo",
+    manualCheck: false,
+    context: "AIPersonality has dead enum-based API. AIStateMachine uses hardcoded weight logic. We want pluggable personalities for future diplomacy.",
+    mustHave: [
+      "IAIPersonality interface with GetStateWeights(...)",
+      "AggressionPersonality implementation (v1, based on current aggression axis)",
+      "AIStateMachine consumes the interface (not hardcoded weights)",
+      "Remove dead AIPersonality enum-based methods"
+    ],
+    niceToHave: [],
+    doneWhen: [
+      "Autoplay: AI nations with different aggression levels produce measurably different state distributions (aggressive nations attack more, passive ones develop/fortify more)"
+    ],
+    filesTouched: ["Assets/code/AI/AIPersonality.cs", "Assets/code/AI/AIStateMachine.cs"],
+    branch: "feature/t2.1-ai-personality"
+  },
+  {
+    id: "T2.2",
+    title: "Complete AISettings Serialization",
+    phase: 2,
+    status: "todo",
+    manualCheck: true,
+    context: "AISettings.asset serializes only 13 of ~45 fields. Most tuning values silently fall back to C# defaults.",
+    mustHave: [
+      "Regenerate AISettings.asset with all public fields serialized",
+      "Set sensible tuned defaults for all thresholds (aggression, readiness, recruitment, building scores)"
+    ],
+    niceToHave: [],
+    doneWhen: [
+      "Inspector shows all fields",
+      "Autoplay runs with tuned values without errors"
+    ],
+    filesTouched: ["Assets/AISettings.asset", "Assets/code/AI/AISettings.cs"],
+    branch: "feature/t2.2-ai-settings"
+  },
+  {
+    id: "T2.3",
+    title: "AI Decision Rework",
+    phase: 2,
+    status: "todo",
+    manualCheck: true,
+    context: "AI target selection is simplistic. Army-building has no feedback loop (recruits regardless of relative strength). Spending isn't income-aware.",
+    mustHave: [
+      "Better target selection: consider distance, border strength, defensibility, not just weakness+richness",
+      "Army-building feedback: recruit when weak relative to neighbors, stop when strong enough",
+      "Income-aware spending: save vs. invest vs. militarize based on treasury/income ratio",
+      "Border fortification placement (fortress on high-value border provinces)"
+    ],
+    niceToHave: [],
+    doneWhen: [
+      "Autoplay: AI nations field armies proportional to threat; aggressive nations expand, passive ones don't over-militarize"
+    ],
+    filesTouched: ["Assets/code/AI/AINationController.cs", "Assets/code/AI/AIAggressionEvaluator.cs"],
+    branch: "feature/t2.3-ai-decisions"
+  },
+  {
+    id: "T2.4",
+    title: "AI Army Management",
+    phase: 2,
+    status: "todo",
+    manualCheck: true,
+    context: "AI armies random-walk in peace, and attack with no staging. No war exhaustion.",
+    mustHave: [
+      "Staged attacks: scout → raid → siege (use AIWarAction properly)",
+      "Army-to-task assignment (which army does what)",
+      "War exhaustion: AI stops attacking after heavy losses, regroups",
+      "Remove the legacy duplicate ExecuteAttackingAction/MoveArmiesTowardTarget/PickBestTarget/PickAttackProvinceForArmy no-arg methods"
+    ],
+    niceToHave: [],
+    doneWhen: [
+      "Autoplay: AI nations conduct multi-phase wars (raid → siege → conquest) and pause after defeats"
+    ],
+    filesTouched: ["Assets/code/AI/AINationController.cs"],
+    branch: "feature/t2.4-ai-army-mgmt"
+  },
+  {
+    id: "T3.1",
+    title: "Quest Expansion & Reward Tuning",
+    phase: 3,
+    status: "todo",
+    manualCheck: true,
+    context: "Only 6 quests, limited types, rewards are flat. Needs user input on desired quest list.",
+    mustHave: [
+      "TBD — needs user input on what quests to add"
+    ],
+    niceToHave: [],
+    doneWhen: [
+      "TBD after quest list is defined"
+    ],
+    filesTouched: ["Assets/code/QuestSystem/", "Assets/Quests/"],
+    branch: "feature/t3.1-quest-expansion"
+  },
+  {
+    id: "T3.2",
+    title: "Battle/Combat Rebalancing",
+    phase: 3,
+    status: "todo",
+    manualCheck: true,
+    context: "Real-time battles with hardcoded loss percentages. No terrain/building modifiers.",
+    mustHave: [
+      "Tune winnerLossPercent/loserLossPercent/drawLossPercent for better pacing",
+      "Add terrain/building combat modifiers (fortress defense, terrain type)",
+      "Harden edge cases: army destroyed mid-battle, battle during AI turn, concurrent battle cap"
+    ],
+    niceToHave: [],
+    doneWhen: [
+      "Autoplay: battles resolve without errors; balance metrics (avg battle length, casualty rates) within target ranges"
+    ],
+    filesTouched: ["Assets/code/Chars/WarMechanics/ArmyLogic/ArmyBattleManager.cs"],
+    branch: "feature/t3.2-battle-rebalance"
+  },
+  {
+    id: "T3.3",
+    title: "Loot Economy Tuning",
+    phase: 3,
+    status: "todo",
+    manualCheck: true,
+    context: "Raid → loot → carry capacity → treasury deposit loop needs tuning. Needs user input on target numbers.",
+    mustHave: [
+      "TBD — needs user input on target numbers"
+    ],
+    niceToHave: [],
+    doneWhen: [
+      "TBD"
+    ],
+    filesTouched: ["Assets/code/RaidSystem/RaidManager.cs", "Assets/code/Chars/WarMechanics/ArmyLogic/General.cs"],
+    branch: "feature/t3.3-loot-tuning"
+  },
+  {
+    id: "T4.1",
+    title: "Map Rendering Polish",
+    phase: 4,
+    status: "todo",
+    manualCheck: true,
+    context: "Province sprites + nation color tinting exist. Need visual cleanup. Needs art direction.",
+    mustHave: [
+      "TBD — needs art direction"
+    ],
+    niceToHave: [],
+    doneWhen: [
+      "TBD"
+    ],
+    filesTouched: ["Assets/code/MapSystem/", "Assets/code/ProvinceSystem/"],
+    branch: "feature/t4.1-map-polish"
+  },
+  {
+    id: "T4.2",
+    title: "Battle Feedback (Dice Roll Visuals)",
+    phase: 4,
+    status: "todo",
+    manualCheck: true,
+    context: "six sided die art exists but isn't wired to battle ticks.",
+    mustHave: [
+      "Show dice roll results during battles using existing art"
+    ],
+    niceToHave: [],
+    doneWhen: [
+      "Visual verification"
+    ],
+    filesTouched: ["Assets/code/UI/", "Assets/KHANS INVASION/ART/battle_system/"],
+    branch: "feature/t4.2-battle-feedback"
+  },
+  {
+    id: "T4.3",
+    title: "UI Polish",
+    phase: 4,
+    status: "todo",
+    manualCheck: true,
+    context: "Extensive GUI art exists. Need consistent application. Needs user direction.",
+    mustHave: [
+      "TBD — needs user direction"
+    ],
+    niceToHave: [],
+    doneWhen: [
+      "TBD"
+    ],
+    filesTouched: ["Assets/code/UI/", "Assets/KHANS INVASION/ART/gui/"],
+    branch: "feature/t4.3-ui-polish"
+  }
+];
+
+// ===== STATE =====
+let tickets = loadTickets();
+let editMode = false;
+let dragIndex = null;
+
+function loadTickets() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) { console.warn('Failed to load tickets from storage', e); }
+  return JSON.parse(JSON.stringify(SEED_TICKETS));
+}
+
+function saveTickets() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+}
+
+// ===== RENDER =====
+function render() {
+  const phaseFilter = document.getElementById('phaseFilter').value;
+  const statusFilter = document.getElementById('statusFilter').value;
+  const manualFilter = document.getElementById('manualFilter').value;
+  const search = document.getElementById('searchInput').value.toLowerCase();
+
+  const filtered = tickets.filter(t => {
+    if (phaseFilter !== 'all' && String(t.phase) !== phaseFilter) return false;
+    if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+    if (manualFilter !== 'all') {
+      const manualVal = t.manualCheck ? 'yes' : 'no';
+      if (manualVal !== manualFilter) return false;
+    }
+    if (search) {
+      const haystack = (t.id + ' ' + t.title + ' ' + (t.context||'')).toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const list = document.getElementById('ticketList');
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty-state">No tickets match the current filters.</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map((t, idx) => {
+    const actualIdx = tickets.indexOf(t);
+    const phaseName = ['Phase 0 — Foundation','Phase 1 — Correctness','Phase 2 — AI Polish','Phase 3 — Feature Polish','Phase 4 — Visuals'][t.phase] || 'Unknown';
+    const statusBadge = t.status === 'done' ? 'done' : (t.status === 'in-progress' ? 'in-progress' : '');
+    const statusLabel = t.status === 'done' ? 'Done' : (t.status === 'in-progress' ? 'In Progress' : 'To Do');
+
+    return `
+      <div class="ticket ${t.status === 'done' ? 'done' : ''} ${t.status === 'in-progress' ? 'in-progress' : ''}"
+           data-idx="${actualIdx}"
+           draggable="${editMode ? 'true' : 'false'}"
+           ondragstart="handleDragStart(event, ${actualIdx})"
+           ondragover="handleDragOver(event)"
+           ondragleave="handleDragLeave(event)"
+           ondrop="handleDrop(event, ${actualIdx})"
+           ondragend="handleDragEnd()">
+        <div class="ticket-header">
+          <span class="drag-handle" title="Drag to reorder">⠿</span>
+          <span class="ticket-id">${t.id}</span>
+          <span class="ticket-title">${escapeHtml(t.title)}</span>
+          <div class="ticket-meta">
+            <span class="badge phase">${phaseName}</span>
+            <span class="badge status ${statusBadge}">${statusLabel}</span>
+            <span class="badge ${t.manualCheck ? 'manual-yes' : 'manual-no'}">Manual: ${t.manualCheck ? 'YES' : 'NO'}</span>
+          </div>
+        </div>
+        <div class="ticket-body">
+          ${t.context ? `<div class="context-text">${escapeHtml(t.context)}</div>` : ''}
+          <div class="section">
+            <div class="section-title">Must Have</div>
+            <ul>${t.mustHave.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+          </div>
+          ${t.niceToHave && t.niceToHave.length ? `
+          <div class="section">
+            <div class="section-title">Nice to Have</div>
+            <ul>${t.niceToHave.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+          </div>` : ''}
+          <div class="section">
+            <div class="section-title">Done When</div>
+            <ul>${t.doneWhen.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+          </div>
+          ${t.filesTouched && t.filesTouched.length ? `
+          <div class="files-touched">📁 ${t.filesTouched.map(escapeHtml).join(' · ')}</div>` : ''}
+          ${t.branch ? `<div class="branch">🌿 ${escapeHtml(t.branch)}</div>` : ''}
+        </div>
+        <div class="ticket-actions">
+          <button class="small" onclick="toggleStatus(${actualIdx})">${t.status === 'done' ? '↩ Reopen' : (t.status === 'in-progress' ? '✓ Mark Done' : '▶ Start')}</button>
+          <button class="small" onclick="toggleManual(${actualIdx})">Manual: ${t.manualCheck ? 'YES' : 'NO'}</button>
+          <button class="small" onclick="moveTicket(${actualIdx}, -1)">↑</button>
+          <button class="small" onclick="moveTicket(${actualIdx}, 1)">↓</button>
+          <button class="small" onclick="editTicket(${actualIdx})">✏️ Edit</button>
+          <button class="small danger" onclick="deleteTicket(${actualIdx})">🗑</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"');
+}
+
+// ===== ACTIONS =====
+function toggleEditMode() {
+  editMode = !editMode;
+  document.getElementById('editModeBtn').textContent = editMode ? '🔒 Exit Edit Mode' : '✏️ Edit Mode';
+  document.body.classList.toggle('edit-mode', editMode);
+  toast(editMode ? 'Edit mode ON — drag to reorder' : 'Edit mode OFF');
+  render();
+}
+
+function toggleStatus(idx) {
+  const t = tickets[idx];
+  if (t.status === 'todo') t.status = 'in-progress';
+  else if (t.status === 'in-progress') t.status = 'done';
+  else t.status = 'todo';
+  saveTickets(); render();
+}
+
+function toggleManual(idx) {
+  tickets[idx].manualCheck = !tickets[idx].manualCheck;
+  saveTickets(); render();
+}
+
+function moveTicket(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= tickets.length) return;
+  [tickets[idx], tickets[newIdx]] = [tickets[newIdx], tickets[idx]];
+  saveTickets(); render();
+}
+
+function deleteTicket(idx) {
+  if (!confirm(`Delete ticket ${tickets[idx].id}?`)) return;
+  tickets.splice(idx, 1);
+  saveTickets(); render();
+}
+
+function addTicket() {
+  const newId = 'T' + (tickets.length + 1);
+  tickets.push({
+    id: newId,
+    title: 'New Ticket',
+    phase: 0,
+    status: 'todo',
+    manualCheck: false,
+    context: '',
+    mustHave: ['New requirement'],
+    niceToHave: [],
+    doneWhen: ['Verification condition'],
+    filesTouched: [],
+    branch: 'feature/' + newId.toLowerCase().replace('.','-')
+  });
+  saveTickets(); render();
+  editTicket(tickets.length - 1);
+}
+
+// ===== EDIT MODAL (inline) =====
+function editTicket(idx) {
+  const t = tickets[idx];
+  const list = document.getElementById('ticketList');
+  const phaseName = ['Phase 0 — Foundation','Phase 1 — Correctness','Phase 2 — AI Polish','Phase 3 — Feature Polish','Phase 4 — Visuals'];
+
+  list.innerHTML = `
+    <div class="ticket" style="border: 2px solid var(--accent);">
+      <div class="ticket-header">
+        <span class="ticket-id">${t.id}</span>
+        <input class="edit-field" id="edit-title" value="${escapeHtml(t.title)}" style="flex:1; font-size:1.1rem; font-weight:600;">
+      </div>
+      <div class="section">
+        <div class="section-title">Phase</div>
+        <select class="edit-field" id="edit-phase">
+          ${phaseName.map((p, i) => `<option value="${i}" ${i === t.phase ? 'selected' : ''}>${p}</option>`).join('')}
+        </select>
+      </div>
+      <div class="section">
+        <div class="section-title">Context</div>
+        <textarea class="edit-field" id="edit-context">${escapeHtml(t.context || '')}</textarea>
+      </div>
+      <div class="section">
+        <div class="section-title">Must Have</div>
+        <div id="edit-must">${t.mustHave.map((item, i) => `
+          <div class="edit-list-item">
+            <input class="edit-field" value="${escapeHtml(item)}" data-must="${i}">
+            <button class="small danger" onclick="removeListItem('must', ${i})">✕</button>
+          </div>`).join('')}
+        </div>
+        <button class="small" onclick="addListItem('must')">+ Add</button>
+      </div>
+      <div class="section">
+        <div class="section-title">Nice to Have</div>
+        <div id="edit-nice">${t.niceToHave.map((item, i) => `
+          <div class="edit-list-item">
+            <input class="edit-field" value="${escapeHtml(item)}" data-nice="${i}">
+            <button class="small danger" onclick="removeListItem('nice', ${i})">✕</button>
+          </div>`).join('')}
+        </div>
+        <button class="small" onclick="addListItem('nice')">+ Add</button>
+      </div>
+      <div class="section">
+        <div class="section-title">Done When</div>
+        <div id="edit-done">${t.doneWhen.map((item, i) => `
+          <div class="edit-list-item">
+            <input class="edit-field" value="${escapeHtml(item)}" data-done="${i}">
+            <button class="small danger" onclick="removeListItem('done', ${i})">✕</button>
+          </div>`).join('')}
+        </div>
+        <button class="small" onclick="addListItem('done')">+ Add</button>
+      </div>
+      <div class="section">
+        <div class="section-title">Files Touched (comma-separated)</div>
+        <input class="edit-field" id="edit-files" value="${escapeHtml((t.filesTouched||[]).join(', '))}">
+      </div>
+      <div class="section">
+        <div class="section-title">Branch</div>
+        <input class="edit-field" id="edit-branch" value="${escapeHtml(t.branch || '')}">
+      </div>
+      <div class="section">
+        <div class="section-title">Manual Check</div>
+        <select class="edit-field" id="edit-manual">
+          <option value="true" ${t.manualCheck ? 'selected' : ''}>YES — requires manual verification</option>
+          <option value="false" ${!t.manualCheck ? 'selected' : ''}>NO — test agent only</option>
+        </select>
+      </div>
+      <div class="ticket-actions">
+        <button class="primary" onclick="saveEdit(${idx})">💾 Save</button>
+        <button onclick="render()">Cancel</button>
+      </div>
+    </div>
+  `;
+}
+
+function addListItem(type) {
+  const container = document.getElementById('edit-' + type);
+  const div = document.createElement('div');
+  div.className = 'edit-list-item';
+  div.innerHTML = `<input class="edit-field" value="" data-${type}="new"><button class="small danger" onclick="this.parentElement.remove()">✕</button>`;
+  container.appendChild(div);
+}
+
+function removeListItem(type, idx) {
+  const container = document.getElementById('edit-' + type);
+  const items = container.querySelectorAll(`[data-${type}]`);
+  if (items[idx]) items[idx].parentElement.remove();
+}
+
+function saveEdit(idx) {
+  const t = tickets[idx];
+  t.title = document.getElementById('edit-title').value.trim() || 'Untitled';
+  t.phase = parseInt(document.getElementById('edit-phase').value);
+  t.context = document.getElementById('edit-context').value.trim();
+  t.manualCheck = document.getElementById('edit-manual').value === 'true';
+  t.branch = document.getElementById('edit-branch').value.trim();
+  t.filesTouched = document.getElementById('edit-files').value.split(',').map(s => s.trim()).filter(Boolean);
+
+  t.mustHave = [...document.querySelectorAll('#edit-must [data-must]')].map(i => i.value.trim()).filter(Boolean);
+  t.niceToHave = [...document.querySelectorAll('#edit-nice [data-nice]')].map(i => i.value.trim()).filter(Boolean);
+  t.doneWhen = [...document.querySelectorAll('#edit-done [data-done]')].map(i => i.value.trim()).filter(Boolean);
+
+  saveTickets(); render();
+  toast('Ticket ' + t.id + ' saved');
+}
+
+// ===== DRAG & DROP =====
+function handleDragStart(e, idx) {
+  dragIndex = idx;
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', idx);
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function handleDrop(e, targetIdx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (dragIndex === null || dragIndex === targetIdx) return;
+  const [moved] = tickets.splice(dragIndex, 1);
+  tickets.splice(targetIdx, 0, moved);
+  dragIndex = null;
+  saveTickets(); render();
+}
+
+function handleDragEnd() {
+  dragIndex = null;
+  document.querySelectorAll('.ticket').forEach(t => t.classList.remove('dragging', 'drag-over'));
+}
+
+// ===== EXPORT / IMPORT =====
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(tickets, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'tickets.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Exported tickets.json');
+}
+
+function importJSON() {
+  document.getElementById('importFile').click();
+}
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      if (!Array.isArray(parsed)) throw new Error('Not an array');
+      tickets = parsed;
+      saveTickets(); render();
+      toast('Imported ' + parsed.length + ' tickets');
+    } catch (err) {
+      alert('Invalid JSON file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function resetToSeed() {
+  if (!confirm('Reset all tickets to the default seed? This will overwrite your current board.')) return;
+  tickets = JSON.parse(JSON.stringify(SEED_TICKETS));
+  saveTickets(); render();
+  toast('Board reset to seed');
+}
+
+// ===== TOAST =====
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ===== INIT =====
+render();
+</script>
+</body>
+</html>
