@@ -54,6 +54,7 @@ public class QuestItemUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             QuestManager.Instance.OnQuestProgressUpdated += OnQuestUpdated;
             QuestManager.Instance.OnQuestCompleted += OnQuestUpdated;
             QuestManager.Instance.OnQuestClaimed += OnQuestUpdated;
+            QuestManager.Instance.OnQuestTargetsInitialized += OnQuestTargetsInitialized;
         }
     }
     
@@ -64,6 +65,7 @@ public class QuestItemUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             QuestManager.Instance.OnQuestProgressUpdated -= OnQuestUpdated;
             QuestManager.Instance.OnQuestCompleted -= OnQuestUpdated;
             QuestManager.Instance.OnQuestClaimed -= OnQuestUpdated;
+            QuestManager.Instance.OnQuestTargetsInitialized -= OnQuestTargetsInitialized;
         }
     }
     
@@ -79,29 +81,31 @@ public class QuestItemUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         bool isUnlocked = questManager.IsQuestUnlocked(questData.questId);
         bool isCompleted = questManager.IsQuestCompleted(questData.questId);
         bool isClaimed = questManager.IsQuestClaimed(questData.questId);
+        bool canClaim = questManager.CanClaimQuest(questData.questId);
+        int target = questManager.GetEffectiveTarget(questData.questId);
         
         if (isClaimed)
         {
             SetVisualState(claimedColor, false, "CLAIMED");
         }
-        else if (isCompleted && isUnlocked)
+        else if (canClaim)
         {
             SetVisualState(claimableColor, true, "CLAIM!");
         }
-        else if (isCompleted && !isUnlocked)
+        else if (isCompleted)
         {
             SetVisualState(completedColor, false, "DONE");
         }
         else if (isUnlocked)
         {
             int progress = questManager.GetQuestProgress(questData.questId);
-            SetVisualState(activeColor, false, $"{progress}/{questData.targetCount}");
+            SetVisualState(activeColor, false, $"{progress}/{target}");
         }
         else
         {
             int progress = questManager.GetQuestProgress(questData.questId);
             if (progress > 0)
-                SetVisualState(lockedColor, false, $"{progress}/{questData.targetCount}");
+                SetVisualState(lockedColor, false, $"{progress}/{target}");
             else
                 SetVisualState(lockedColor, false, "LOCKED");
         }
@@ -119,17 +123,22 @@ public class QuestItemUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             progressText.text = statusText;
         
         if (button != null)
-            button.interactable = highlight || questManager.IsQuestCompleted(questData.questId);
+            button.interactable = highlight;
     }
     
     private void OnClick()
     {
         if (questManager == null || questData == null) return;
         
-        if (questManager.IsQuestCompleted(questData.questId) && !questManager.IsQuestClaimed(questData.questId))
+        if (questManager.CanClaimQuest(questData.questId))
         {
             questManager.TryClaimQuest(questData.questId);
         }
+    }
+
+    private void OnQuestTargetsInitialized()
+    {
+        UpdateVisualState();
     }
     
     // ===== HOVER EVENTS =====
