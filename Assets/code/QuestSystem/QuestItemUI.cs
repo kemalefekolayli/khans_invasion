@@ -8,14 +8,16 @@ public class QuestItemUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [Header("References")]
     public Image questBoxImage;
     public TextMeshProUGUI questTitleText;
+    public TextMeshProUGUI progressText;
     public Image arrowImage;
     public Button button;
     
     [Header("Colors")]
-    public Color lockedColor = new Color(0.3f, 0.3f, 0.3f, 1f);
-    public Color activeColor = Color.white;
-    public Color completedColor = new Color(0.5f, 0.5f, 0.5f, 1f);
-    public Color claimedColor = new Color(0.4f, 0.4f, 0.4f, 1f);
+    public Color lockedColor = new Color(0.25f, 0.25f, 0.25f, 1f);
+    public Color activeColor = new Color(0.95f, 0.85f, 0.4f, 1f);
+    public Color completedColor = new Color(0.6f, 0.6f, 0.6f, 1f);
+    public Color claimableColor = new Color(0.3f, 0.9f, 0.4f, 1f);
+    public Color claimedColor = new Color(0.4f, 0.55f, 0.9f, 1f);
     
     private QuestData questData;
     private QuestManager questManager;
@@ -28,7 +30,16 @@ public class QuestItemUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         questManager = QuestManager.Instance;
         
         if (questTitleText != null)
-            questTitleText.text = $"QUEST {questData.questId}";
+        {
+            questTitleText.text = questData.questTitle;
+            GameFontManager.Apply(questTitleText);
+        }
+        
+        if (progressText != null)
+        {
+            progressText.text = "";
+            GameFontManager.Apply(progressText);
+        }
         
         if (button != null)
             button.onClick.AddListener(OnClick);
@@ -71,15 +82,14 @@ public class QuestItemUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         
         if (isClaimed)
         {
-            SetVisualState(claimedColor, false, "COMPLETED");
+            SetVisualState(claimedColor, false, "CLAIMED");
         }
         else if (isCompleted && isUnlocked)
         {
-            SetVisualState(completedColor, true, "CLAIM!");
+            SetVisualState(claimableColor, true, "CLAIM!");
         }
         else if (isCompleted && !isUnlocked)
         {
-            // Quest is done but prerequisite not claimed yet
             SetVisualState(completedColor, false, "DONE");
         }
         else if (isUnlocked)
@@ -105,6 +115,9 @@ public class QuestItemUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (arrowImage != null)
             arrowImage.color = color;
         
+        if (progressText != null)
+            progressText.text = statusText;
+        
         if (button != null)
             button.interactable = highlight || questManager.IsQuestCompleted(questData.questId);
     }
@@ -121,13 +134,9 @@ public class QuestItemUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     
     // ===== HOVER EVENTS =====
     
-
-    
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (questData == null) return;
-        
-
         
         if (QuestTooltip.Instance != null)
         {
@@ -137,8 +146,6 @@ public class QuestItemUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     
     public void OnPointerExit(PointerEventData eventData)
     {
-
-        
         if (QuestTooltip.Instance != null)
         {
             QuestTooltip.Instance.Hide();
