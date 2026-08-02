@@ -16,12 +16,14 @@ public class FogOfWarManager : MonoBehaviour
 
     private Dictionary<ProvinceModel, FogState> provinceFogStates = new Dictionary<ProvinceModel, FogState>();
     private HashSet<ProvinceModel> discoveredProvinces = new HashSet<ProvinceModel>();
+    private HashSet<ProvinceModel> activeLerpProvinces = new HashSet<ProvinceModel>();
+    private List<ProvinceModel> settledProvinces = new List<ProvinceModel>();
+    private const float ColorEpsilon = 0.001f;
     private bool fogInitialized = false;  // NEW: Guard against duplicate initialization
     public bool IsFogActive => isActiveAndEnabled && fogInitialized;
 
     private class FogState
     {
-        public ProvinceModel province;
         public Color targetColor;
         public bool isRevealing;
         public bool isBorderPeek;
@@ -97,7 +99,6 @@ public class FogOfWarManager : MonoBehaviour
                 
                 provinceFogStates[province] = new FogState
                 {
-                    province = province,
                     targetColor = nationColor,
                     isRevealing = true,  // Already revealing
                     isBorderPeek = false
@@ -113,7 +114,6 @@ public class FogOfWarManager : MonoBehaviour
                 
                 provinceFogStates[province] = new FogState
                 {
-                    province = province,
                     targetColor = nationColor,
                     isRevealing = false,
                     isBorderPeek = false
@@ -155,6 +155,7 @@ public class FogOfWarManager : MonoBehaviour
         {
             state.isRevealing = true;
             state.isBorderPeek = false;
+            activeLerpProvinces.Add(province);
         }
         
         // Update neighbors to border peek mode
@@ -174,6 +175,7 @@ public class FogOfWarManager : MonoBehaviour
             // Update target color to new owner's color
             Color newNationColor = GetNationColor(province);
             state.targetColor = newNationColor;
+            activeLerpProvinces.Add(province);
             
             // Also immediately apply the color if province is revealed
             if (state.isRevealing && province.spriteRenderer != null)
@@ -198,6 +200,7 @@ public class FogOfWarManager : MonoBehaviour
             if (IsAdjacentToDiscovered(province))
             {
                 state.isBorderPeek = true;
+                activeLerpProvinces.Add(province);
             }
         }
     }
@@ -229,14 +232,21 @@ public class FogOfWarManager : MonoBehaviour
 
     private void Update()
     {
-        foreach (var kvp in provinceFogStates)
+        if (activeLerpProvinces.Count == 0) return;
+
+        foreach (var province in activeLerpProvinces)
         {
-            FogState state = kvp.Value;
-            if (state.province == null || state.province.spriteRenderer == null) continue;
-            
-            Color currentColor = state.province.spriteRenderer.color;
+            if (province == null || province.spriteRenderer == null) continue;
+
+            if (!provinceFogStates.TryGetValue(province, out FogState state))
+            {
+                settledProvinces.Add(province);
+                continue;
+            }
+
+            Color currentColor = province.spriteRenderer.color;
             Color target;
-            
+
             if (state.isRevealing)
             {
                 // Fully reveal to nation color
@@ -249,16 +259,37 @@ public class FogOfWarManager : MonoBehaviour
             }
             else
             {
+                settledProvinces.Add(province);
                 continue; // Stay at fog color
             }
-            
+
             // Lerp toward target
-            if (currentColor != target)
+            if (ColorsNearlyEqual(currentColor, target))
             {
-                Color newColor = Color.Lerp(currentColor, target, Time.deltaTime * revealSpeed);
-                state.province.spriteRenderer.color = newColor;
+                settledProvinces.Add(province);
+                continue;
             }
+
+            Color newColor = Color.Lerp(currentColor, target, Time.deltaTime * revealSpeed);
+            province.spriteRenderer.color = newColor;
         }
+
+        if (settledProvinces.Count > 0)
+        {
+            for (int i = 0; i < settledProvinces.Count; i++)
+            {
+                activeLerpProvinces.Remove(settledProvinces[i]);
+            }
+            settledProvinces.Clear();
+        }
+    }
+
+    private static bool ColorsNearlyEqual(Color a, Color b)
+    {
+        return Mathf.Abs(a.r - b.r) < ColorEpsilon
+            && Mathf.Abs(a.g - b.g) < ColorEpsilon
+            && Mathf.Abs(a.b - b.b) < ColorEpsilon
+            && Mathf.Abs(a.a - b.a) < ColorEpsilon;
     }
 
     public bool IsDiscovered(ProvinceModel province)
