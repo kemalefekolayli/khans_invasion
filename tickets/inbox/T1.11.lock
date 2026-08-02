@@ -1,0 +1,23 @@
+T1.11 - Quest tooltip text layout and title styling
+===================================================
+
+Scope:
+- Fix the pink quest tooltip text positions shown in the supplied screenshots.
+- Keep the compact tooltip panel.
+- Arrange title, description, reward, and progress in separate readable rows;
+  no overlap or text outside the panel.
+- Make the title visually distinct from the other text using a warm gold
+  accent while keeping body text readable.
+- Preserve hover behavior and existing tooltip content.
+
+Allowed file:
+- Assets/Resources/QuestPanelCanvas.prefab
+
+Forbidden:
+- Assets/Scenes/StartScene.unity
+- Packages/*
+- ProjectSettings/*
+- MCP configuration files
+- Quest logic/code changes
+
+Testing is intentionally deferred for this focused visual adjustment.

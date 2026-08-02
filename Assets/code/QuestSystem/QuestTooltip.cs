@@ -19,6 +19,7 @@ public class QuestTooltip : MonoBehaviour
     private Canvas parentCanvas;
     private QuestData currentQuest;
     private CanvasGroup canvasGroup;
+    private QuestManager subscribedQuestManager;
     
     private void Awake()
     {
@@ -46,15 +47,48 @@ public class QuestTooltip : MonoBehaviour
             Hide();
         }
     }
+
+    private void OnEnable()
+    {
+        SubscribeToQuestManager();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeFromQuestManager();
+    }
+
+    private void SubscribeToQuestManager()
+    {
+        QuestManager manager = QuestManager.Instance;
+        if (manager == subscribedQuestManager) return;
+
+        UnsubscribeFromQuestManager();
+        if (manager != null)
+        {
+            manager.OnQuestTargetsInitialized += OnQuestTargetsInitialized;
+            subscribedQuestManager = manager;
+        }
+    }
+
+    private void UnsubscribeFromQuestManager()
+    {
+        if (subscribedQuestManager == null) return;
+
+        subscribedQuestManager.OnQuestTargetsInitialized -= OnQuestTargetsInitialized;
+        subscribedQuestManager = null;
+    }
     
     public void Show(QuestData quest, Vector3 position)
     {
         if (tooltipPanel == null || quest == null) return;
         
+        SubscribeToQuestManager();
         currentQuest = quest;
         UpdateContent();
-        UpdatePosition(position);
         tooltipPanel.SetActive(true);
+        Canvas.ForceUpdateCanvases();
+        UpdatePosition(position);
     }
     
     public void Hide()
@@ -69,16 +103,39 @@ public class QuestTooltip : MonoBehaviour
     public void UpdatePosition(Vector3 screenPosition)
     {
         if (tooltipRect == null || parentCanvas == null) return;
+
+        RectTransform parentRect = tooltipRect.parent as RectTransform;
+        if (parentRect == null) return;
         
         Vector2 localPoint;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            parentCanvas.transform as RectTransform,
+            parentRect,
             screenPosition,
-            parentCanvas.worldCamera,
+            GetCanvasCamera(),
             out localPoint
         );
         
-        tooltipRect.anchoredPosition = localPoint + offset;
+        Vector2 desiredPivotPosition = localPoint + offset;
+        Vector2 tooltipSize = tooltipRect.rect.size;
+        Rect parentBounds = parentRect.rect;
+
+        // Clamp the tooltip's pivot, rather than its anchored position. This keeps
+        // the whole panel inside the canvas even when the pointer is at an edge.
+        Vector2 pivotMinimum = parentBounds.min + Vector2.Scale(tooltipSize, tooltipRect.pivot);
+        Vector2 pivotMaximum = parentBounds.max - Vector2.Scale(tooltipSize, Vector2.one - tooltipRect.pivot);
+        desiredPivotPosition.x = Mathf.Clamp(desiredPivotPosition.x, pivotMinimum.x, pivotMaximum.x);
+        desiredPivotPosition.y = Mathf.Clamp(desiredPivotPosition.y, pivotMinimum.y, pivotMaximum.y);
+
+        Vector2 anchorReference = parentBounds.min + Vector2.Scale(parentBounds.size, tooltipRect.anchorMin);
+        tooltipRect.anchoredPosition = desiredPivotPosition - anchorReference;
+    }
+
+    private Camera GetCanvasCamera()
+    {
+        if (parentCanvas == null || parentCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
+            return null;
+
+        return parentCanvas.worldCamera;
     }
     
     private void UpdateContent()
@@ -98,17 +155,27 @@ public class QuestTooltip : MonoBehaviour
         if (progressText != null)
         {
             int current = 0;
-            if (QuestManager.Instance != null)
+            int target = 0;
+            QuestManager manager = QuestManager.Instance;
+            if (manager != null)
             {
-                current = QuestManager.Instance.GetQuestProgress(currentQuest.questId);
+                current = manager.GetQuestProgress(currentQuest.questId);
+                target = manager.GetEffectiveTarget(currentQuest.questId);
             }
-            progressText.text = $"Progress: {current}/{currentQuest.targetCount}";
+            progressText.text = $"Progress: {current}/{target}";
         }
         
         if (rewardText != null)
         {
             rewardText.text = $"Reward: {currentQuest.rewardDescription}";
         }
+    }
+
+    private void OnQuestTargetsInitialized()
+    {
+        if (currentQuest == null || tooltipPanel == null || !tooltipPanel.activeSelf) return;
+
+        UpdateContent();
     }
 }
 

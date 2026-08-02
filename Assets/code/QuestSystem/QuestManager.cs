@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,14 +9,23 @@ public class QuestManager : MonoBehaviour
     
     [Header("Quest Definitions")]
     public List<QuestData> allQuests = new List<QuestData>();
+
+    [Header("Dynamic Value Targets")]
+    [SerializeField, Min(1f)] private float startingValueTargetMultiplier = 1.25f;
+    [SerializeField, Min(1)] private int startingValueTargetMargin = 1;
+    [SerializeField, Min(0.05f)] private float startingValuesSettleDelay = 0.3f;
     
     private Dictionary<int, int> questProgress = new Dictionary<int, int>();
     private HashSet<int> completedQuests = new HashSet<int>();
     private HashSet<int> claimedQuests = new HashSet<int>();
+    private Dictionary<int, int> effectiveTargets = new Dictionary<int, int>();
+    private bool valueTargetsInitialized;
+    private Coroutine effectiveTargetInitialization;
     
     public event Action<int> OnQuestProgressUpdated;
     public event Action<int> OnQuestCompleted;
     public event Action<int> OnQuestClaimed;
+    public event Action OnQuestTargetsInitialized;
     
     private void Awake()
     {
@@ -29,22 +39,175 @@ public class QuestManager : MonoBehaviour
         InitializeQuestProgress();
         GameLog.Log(GameLogCategory.Core, "[QuestManager] Initialized");
     }
-    
+
     private void OnEnable()
     {
         SubscribeToEvents();
+
+        if (!valueTargetsInitialized && effectiveTargetInitialization == null)
+        {
+            effectiveTargetInitialization = StartCoroutine(InitializeEffectiveTargetsWhenSettled());
+        }
     }
     
     private void OnDisable()
     {
         UnsubscribeFromEvents();
+
+        if (effectiveTargetInitialization != null)
+        {
+            StopCoroutine(effectiveTargetInitialization);
+            effectiveTargetInitialization = null;
+        }
     }
     
     private void InitializeQuestProgress()
     {
+        questProgress.Clear();
+        completedQuests.Clear();
+        claimedQuests.Clear();
+        effectiveTargets.Clear();
+        valueTargetsInitialized = false;
+
+        if (allQuests == null) return;
+
         foreach (var quest in allQuests)
         {
+            if (quest == null) continue;
             questProgress[quest.questId] = 0;
+        }
+    }
+
+    private IEnumerator InitializeEffectiveTargetsWhenSettled()
+    {
+        StartingValues previousValues = default;
+        bool hasPreviousValues = false;
+        float stableTime = 0f;
+
+        while (!valueTargetsInitialized)
+        {
+            if (TryGetCurrentStartingValues(out StartingValues currentValues))
+            {
+                if (!hasPreviousValues || !currentValues.Equals(previousValues))
+                {
+                    previousValues = currentValues;
+                    hasPreviousValues = true;
+                    stableTime = 0f;
+                }
+                else
+                {
+                    stableTime += Time.unscaledDeltaTime;
+                }
+
+                if (stableTime >= startingValuesSettleDelay)
+                {
+                    InitializeEffectiveTargets(currentValues);
+                    yield break;
+                }
+            }
+            else
+            {
+                hasPreviousValues = false;
+                stableTime = 0f;
+            }
+
+            yield return null;
+        }
+    }
+
+    private bool TryGetCurrentStartingValues(out StartingValues values)
+    {
+        PlayerNation player = PlayerNation.Instance;
+        if (player?.Nation == null || player.OwnedProvinces == null || ArmyManager.Instance == null)
+        {
+            values = default;
+            return false;
+        }
+
+        values = new StartingValues(
+            GetCurrentValue(QuestType.AccumulateGold),
+            GetCurrentValue(QuestType.ReachIncome),
+            GetCurrentValue(QuestType.ReachTotalPopulation),
+            GetCurrentValue(QuestType.ReachArmySize));
+        return true;
+    }
+
+    private void InitializeEffectiveTargets(StartingValues startingValues)
+    {
+        if (allQuests == null) return;
+
+        int margin = Mathf.Max(1, startingValueTargetMargin);
+        float multiplier = Mathf.Max(1f, startingValueTargetMultiplier);
+
+        foreach (QuestData quest in allQuests)
+        {
+            if (quest == null || !IsValueQuest(quest.questType)) continue;
+
+            int startingValue = startingValues.GetValue(quest.questType);
+            int dynamicTarget = Mathf.CeilToInt(startingValue * multiplier + margin);
+            int effectiveTarget = Mathf.Max(quest.targetCount + margin, dynamicTarget);
+            effectiveTargets[quest.questId] = effectiveTarget;
+        }
+
+        valueTargetsInitialized = true;
+        OnQuestTargetsInitialized?.Invoke();
+    }
+
+    private struct StartingValues : IEquatable<StartingValues>
+    {
+        private readonly int gold;
+        private readonly int income;
+        private readonly int population;
+        private readonly int army;
+
+        public StartingValues(int gold, int income, int population, int army)
+        {
+            this.gold = gold;
+            this.income = income;
+            this.population = population;
+            this.army = army;
+        }
+
+        public int GetValue(QuestType questType)
+        {
+            switch (questType)
+            {
+                case QuestType.AccumulateGold:
+                    return gold;
+                case QuestType.ReachIncome:
+                    return income;
+                case QuestType.ReachTotalPopulation:
+                    return population;
+                case QuestType.ReachArmySize:
+                    return army;
+                default:
+                    return 0;
+            }
+        }
+
+        public bool Equals(StartingValues other)
+        {
+            return gold == other.gold
+                && income == other.income
+                && population == other.population
+                && army == other.army;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is StartingValues other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = gold;
+                hash = (hash * 397) ^ income;
+                hash = (hash * 397) ^ population;
+                hash = (hash * 397) ^ army;
+                return hash;
+            }
         }
     }
     
@@ -137,22 +300,43 @@ public class QuestManager : MonoBehaviour
     
     private void AddProgress(QuestType questType, int amount)
     {
+        if (allQuests == null || amount <= 0) return;
+
+        HashSet<int> unlockedQuestIds = new HashSet<int>();
+        foreach (QuestData quest in allQuests)
+        {
+            if (quest != null && IsQuestUnlocked(quest.questId))
+            {
+                unlockedQuestIds.Add(quest.questId);
+            }
+        }
+
+        bool completedQuest = false;
         foreach (var quest in allQuests)
         {
+            if (quest == null) continue;
             if (quest.questType != questType) continue;
+            if (!unlockedQuestIds.Contains(quest.questId)) continue;
             if (completedQuests.Contains(quest.questId)) continue;
             
             questProgress[quest.questId] += amount;
-            GameLog.Log(GameLogCategory.Core, $"[QuestManager] Quest {quest.questId} progress: {questProgress[quest.questId]}/{quest.targetCount}");
+            int target = GetEffectiveTarget(quest.questId);
+            GameLog.Log(GameLogCategory.Core, $"[QuestManager] Quest {quest.questId} progress: {questProgress[quest.questId]}/{target}");
             
             OnQuestProgressUpdated?.Invoke(quest.questId);
             
-            if (questProgress[quest.questId] >= quest.targetCount)
+            if (questProgress[quest.questId] >= target)
             {
                 completedQuests.Add(quest.questId);
                 GameLog.Log(GameLogCategory.Core, $"[QuestManager] Quest {quest.questId} COMPLETED!");
                 OnQuestCompleted?.Invoke(quest.questId);
+                completedQuest = true;
             }
+        }
+
+        if (completedQuest)
+        {
+            CheckValueQuests();
         }
     }
     
@@ -163,12 +347,16 @@ public class QuestManager : MonoBehaviour
     /// </summary>
     public void CheckValueQuests()
     {
+        if (!valueTargetsInitialized || allQuests == null) return;
+
         PlayerNation player = PlayerNation.Instance;
         if (player?.Nation == null) return;
         
         foreach (var quest in allQuests)
         {
+            if (quest == null) continue;
             if (!IsValueQuest(quest.questType)) continue;
+            if (!IsQuestUnlocked(quest.questId)) continue;
             if (completedQuests.Contains(quest.questId)) continue;
             
             int currentValue = GetQuestCurrentValue(quest);
@@ -177,10 +365,11 @@ public class QuestManager : MonoBehaviour
             questProgress[quest.questId] = currentValue;
             OnQuestProgressUpdated?.Invoke(quest.questId);
             
-            if (currentValue >= quest.targetCount)
+            int target = GetEffectiveTarget(quest.questId);
+            if (currentValue >= target)
             {
                 completedQuests.Add(quest.questId);
-                GameLog.Log(GameLogCategory.Core, $"[QuestManager] Quest {quest.questId} COMPLETED! (value {currentValue}/{quest.targetCount})");
+                GameLog.Log(GameLogCategory.Core, $"[QuestManager] Quest {quest.questId} COMPLETED! (value {currentValue}/{target})");
                 OnQuestCompleted?.Invoke(quest.questId);
             }
         }
@@ -202,8 +391,13 @@ public class QuestManager : MonoBehaviour
     
     private int GetQuestCurrentValue(QuestData quest)
     {
+        return GetCurrentValue(quest.questType);
+    }
+
+    private int GetCurrentValue(QuestType questType)
+    {
         PlayerNation player = PlayerNation.Instance;
-        switch (quest.questType)
+        switch (questType)
         {
             case QuestType.AccumulateGold:
                 return (int)player.nationMoney;
@@ -230,7 +424,7 @@ public class QuestManager : MonoBehaviour
             case QuestType.ReachArmySize:
                 return ArmyManager.Instance != null ? (int)ArmyManager.Instance.TotalPlayerSoldiers : 0;
             default:
-                return questProgress.TryGetValue(quest.questId, out int progress) ? progress : 0;
+                return 0;
         }
     }
     
@@ -242,6 +436,19 @@ public class QuestManager : MonoBehaviour
         if (quest.prerequisiteQuestId < 0) return true;
         
         return completedQuests.Contains(quest.prerequisiteQuestId);
+    }
+
+    public bool CanClaimQuest(int questId)
+    {
+        QuestData quest = GetQuestById(questId);
+        if (quest == null || !IsQuestCompleted(questId) || IsQuestClaimed(questId)) return false;
+
+        if (quest.prerequisiteQuestId >= 0 && !IsQuestClaimed(quest.prerequisiteQuestId))
+        {
+            return false;
+        }
+
+        return true;
     }
     
     public bool IsQuestCompleted(int questId)
@@ -258,19 +465,24 @@ public class QuestManager : MonoBehaviour
     {
         return questProgress.TryGetValue(questId, out int progress) ? progress : 0;
     }
+
+    public int GetEffectiveTarget(int questId)
+    {
+        QuestData quest = GetQuestById(questId);
+        if (quest == null) return 0;
+
+        return effectiveTargets.TryGetValue(questId, out int target) ? target : quest.targetCount;
+    }
     
     public QuestData GetQuestById(int questId)
     {
-        return allQuests.Find(q => q.questId == questId);
+        return allQuests == null ? null : allQuests.Find(q => q != null && q.questId == questId);
     }
     
     public bool TryClaimQuest(int questId)
     {
-        if (!IsQuestCompleted(questId)) return false;
-        if (IsQuestClaimed(questId)) return false;
-        
         QuestData quest = GetQuestById(questId);
-        if (quest == null) return false;
+        if (quest == null || !CanClaimQuest(questId)) return false;
         
         ApplyReward(quest);
         claimedQuests.Add(questId);
