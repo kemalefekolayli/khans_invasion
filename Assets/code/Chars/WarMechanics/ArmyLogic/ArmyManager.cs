@@ -74,6 +74,13 @@ public class ArmyManager : MonoBehaviour
     
     // ===== QUERIES =====
     
+    /// <summary>
+    /// Live internal list of all registered armies. Read-only iteration; never modify.
+    /// Allocation-free (avoids the defensive copy GetAllArmies() returns). Always current:
+    /// kept in sync by RegisterArmy/UnregisterArmy.
+    /// </summary>
+    public IReadOnlyList<Army> AllArmies => allArmies;
+
     public List<Army> GetAllArmies() => new List<Army>(allArmies);
     public List<Army> GetPlayerArmies() => new List<Army>(playerArmies);
     public List<Army> GetEnemyArmies() => new List<Army>(enemyArmies);

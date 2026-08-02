@@ -8,6 +8,7 @@ public class ArmyBattleManager : MonoBehaviour
     [Header("Detection")]
     [SerializeField] private float battleRadius = 0.75f;
     [SerializeField] private float retreatRadiusMultiplier = 1.35f;
+    [SerializeField] private float scanIntervalSeconds = 0.4f;
     [SerializeField] private bool logScanDiagnostics = true;
     [SerializeField] private float diagnosticRadius = 3f;
 
@@ -22,7 +23,9 @@ public class ArmyBattleManager : MonoBehaviour
 
     private readonly Dictionary<int, ArmyBattleState> activeBattles = new Dictionary<int, ArmyBattleState>();
     private readonly Dictionary<Army, int> battleByArmy = new Dictionary<Army, int>();
+    private readonly List<int> battleIdBuffer = new List<int>();
     private float nextDiagnosticLogTime;
+    private float nextScanTime;
 
     private class ArmyBattleState
     {
@@ -68,7 +71,10 @@ public class ArmyBattleManager : MonoBehaviour
             return;
         }
 
-        List<Army> armies = ArmyManager.Instance.GetAllArmies();
+        if (Time.time < nextScanTime) return;
+        nextScanTime = Time.time + scanIntervalSeconds;
+
+        IReadOnlyList<Army> armies = ArmyManager.Instance.AllArmies;
         if (ShouldLogDiagnostics() && armies.Count < 2)
         {
             GameLog.Log(GameLogCategory.Core, $"[ArmyBattleManager] Need at least 2 armies to fight. Registered armies: {armies.Count}");
@@ -211,8 +217,9 @@ public class ArmyBattleManager : MonoBehaviour
     {
         if (activeBattles.Count == 0) return;
 
-        List<int> battleIds = new List<int>(activeBattles.Keys);
-        foreach (int battleId in battleIds)
+        battleIdBuffer.Clear();
+        battleIdBuffer.AddRange(activeBattles.Keys);
+        foreach (int battleId in battleIdBuffer)
         {
             if (!activeBattles.TryGetValue(battleId, out ArmyBattleState state)) continue;
 
