@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66312371d8c7a2f489f33c5c217d02a9, type: 3}
+  m_Name: Quest_7
+  m_EditorClassIdentifier: 
+  questId: 6
+  questTitle: Amass a fortune.
+  questDescription: Amass 300 gold in your treasury.
+  questType: 6
+  targetCount: 300
+  rewardType: 0
+  rewardAmount: 150
+  rewardDescription: Gain 150 gold.
+  prerequisiteQuestId: 0
