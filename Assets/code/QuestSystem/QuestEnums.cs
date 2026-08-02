@@ -5,7 +5,12 @@ public enum QuestType
     ConquerProvinces,
     DefeatArmies,
     TakeoverFortressProvinces,
-    DestroyNation
+    DestroyNation,
+    AccumulateGold,
+    ReachIncome,
+    ReachTotalPopulation,
+    RecruitTroops,
+    ReachArmySize
 }
 
 public enum RewardType

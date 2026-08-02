@@ -55,6 +55,10 @@ public class QuestManager : MonoBehaviour
         GameEvents.OnProvinceConquered += OnProvinceConquered;
         GameEvents.OnArmyDefeated += OnArmyDefeated;
         GameEvents.OnNationDestroyed += OnNationDestroyed;
+        GameEvents.OnArmySpawned += OnArmySpawned;
+        GameEvents.OnPlayerStatsChanged += OnPlayerStatsChanged;
+        GameEvents.OnPopulationGrowth += OnPopulationGrowth;
+        GameEvents.OnTurnEnded += OnTurnEnded;
     }
     
     private void UnsubscribeFromEvents()
@@ -64,18 +68,22 @@ public class QuestManager : MonoBehaviour
         GameEvents.OnProvinceConquered -= OnProvinceConquered;
         GameEvents.OnArmyDefeated -= OnArmyDefeated;
         GameEvents.OnNationDestroyed -= OnNationDestroyed;
+        GameEvents.OnArmySpawned -= OnArmySpawned;
+        GameEvents.OnPlayerStatsChanged -= OnPlayerStatsChanged;
+        GameEvents.OnPopulationGrowth -= OnPopulationGrowth;
+        GameEvents.OnTurnEnded -= OnTurnEnded;
     }
     
     private void OnProvinceRaided(ProvinceModel province, General raider, float loot)
     {
         // Only count if the raider is player's general
         if (raider?.OwnerNation != PlayerNation.Instance?.Nation) return;
-        IncrementProgress(QuestType.RaidProvinces);
+        AddProgress(QuestType.RaidProvinces, 1);
     }
     
     private void OnBuildingBuilt(string buildingType, ProvinceModel province)
     {
-        IncrementProgress(QuestType.BuildBuildings);
+        AddProgress(QuestType.BuildBuildings, 1);
     }
     
     private void OnProvinceConquered(ProvinceModel province, NationModel oldOwner, NationModel newOwner)
@@ -83,12 +91,12 @@ public class QuestManager : MonoBehaviour
         // Only count if we are the new owner
         if (newOwner != PlayerNation.Instance?.Nation) return;
         
-        IncrementProgress(QuestType.ConquerProvinces);
+        AddProgress(QuestType.ConquerProvinces, 1);
         
         // Check if province has fortress building
         if (province.buildings != null && province.buildings.Contains("Fortress"))
         {
-            IncrementProgress(QuestType.TakeoverFortressProvinces);
+            AddProgress(QuestType.TakeoverFortressProvinces, 1);
         }
     }
     
@@ -97,22 +105,44 @@ public class QuestManager : MonoBehaviour
         // Only count defeated armies NOT owned by the player nation
         if (army?.OwnerNation == PlayerNation.Instance?.Nation) return;
         
-        IncrementProgress(QuestType.DefeatArmies);
+        AddProgress(QuestType.DefeatArmies, 1);
     }
     
     private void OnNationDestroyed(NationModel nation)
     {
-        IncrementProgress(QuestType.DestroyNation);
+        AddProgress(QuestType.DestroyNation, 1);
     }
     
-    private void IncrementProgress(QuestType questType)
+    private void OnArmySpawned(Army army, General general)
+    {
+        // Count newly recruited troops for the player
+        if (army?.OwnerNation != PlayerNation.Instance?.Nation) return;
+        AddProgress(QuestType.RecruitTroops, (int)army.ArmySize);
+    }
+    
+    private void OnPlayerStatsChanged()
+    {
+        CheckValueQuests();
+    }
+    
+    private void OnPopulationGrowth(ProvinceModel province, float growthAmount)
+    {
+        CheckValueQuests();
+    }
+    
+    private void OnTurnEnded(int turnNumber)
+    {
+        CheckValueQuests();
+    }
+    
+    private void AddProgress(QuestType questType, int amount)
     {
         foreach (var quest in allQuests)
         {
             if (quest.questType != questType) continue;
             if (completedQuests.Contains(quest.questId)) continue;
             
-            questProgress[quest.questId]++;
+            questProgress[quest.questId] += amount;
             GameLog.Log(GameLogCategory.Core, $"[QuestManager] Quest {quest.questId} progress: {questProgress[quest.questId]}/{quest.targetCount}");
             
             OnQuestProgressUpdated?.Invoke(quest.questId);
@@ -123,6 +153,84 @@ public class QuestManager : MonoBehaviour
                 GameLog.Log(GameLogCategory.Core, $"[QuestManager] Quest {quest.questId} COMPLETED!");
                 OnQuestCompleted?.Invoke(quest.questId);
             }
+        }
+    }
+    
+    /// <summary>
+    /// Value-based quest check. Reads the current live value for each value-type
+    /// quest (gold, income, population, army size) and completes it once the
+    /// value reaches the target. Already-completed quests are skipped.
+    /// </summary>
+    public void CheckValueQuests()
+    {
+        PlayerNation player = PlayerNation.Instance;
+        if (player?.Nation == null) return;
+        
+        foreach (var quest in allQuests)
+        {
+            if (!IsValueQuest(quest.questType)) continue;
+            if (completedQuests.Contains(quest.questId)) continue;
+            
+            int currentValue = GetQuestCurrentValue(quest);
+            if (currentValue == questProgress[quest.questId]) continue;
+            
+            questProgress[quest.questId] = currentValue;
+            OnQuestProgressUpdated?.Invoke(quest.questId);
+            
+            if (currentValue >= quest.targetCount)
+            {
+                completedQuests.Add(quest.questId);
+                GameLog.Log(GameLogCategory.Core, $"[QuestManager] Quest {quest.questId} COMPLETED! (value {currentValue}/{quest.targetCount})");
+                OnQuestCompleted?.Invoke(quest.questId);
+            }
+        }
+    }
+    
+    private bool IsValueQuest(QuestType questType)
+    {
+        switch (questType)
+        {
+            case QuestType.AccumulateGold:
+            case QuestType.ReachIncome:
+            case QuestType.ReachTotalPopulation:
+            case QuestType.ReachArmySize:
+                return true;
+            default:
+                return false;
+        }
+    }
+    
+    private int GetQuestCurrentValue(QuestData quest)
+    {
+        PlayerNation player = PlayerNation.Instance;
+        switch (quest.questType)
+        {
+            case QuestType.AccumulateGold:
+                return (int)player.nationMoney;
+            case QuestType.ReachIncome:
+            {
+                float income = 0f;
+                foreach (var province in player.OwnedProvinces)
+                {
+                    if (province == null) continue;
+                    income += province.provinceTaxIncome + province.provinceTradePower;
+                }
+                return (int)(income + player.bonusTradeIncome);
+            }
+            case QuestType.ReachTotalPopulation:
+            {
+                int population = 0;
+                foreach (var province in player.OwnedProvinces)
+                {
+                    if (province == null) continue;
+                    population += (int)province.provinceCurrentPop;
+                }
+                return population;
+            }
+            case QuestType.ReachArmySize:
+                return ArmyManager.Instance != null ? (int)ArmyManager.Instance.TotalPlayerSoldiers : 0;
+            default:
+                return questProgress.TryGetValue(quest.questId, out int progress) ? progress : 0;
         }
     }
     

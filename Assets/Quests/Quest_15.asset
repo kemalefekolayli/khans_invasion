@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66312371d8c7a2f489f33c5c217d02a9, type: 3}
+  m_Name: Quest_15
+  m_EditorClassIdentifier: 
+  questId: 14
+  questTitle: Field a host.
+  questDescription: Field an army of 150 total soldiers.
+  questType: 10
+  targetCount: 150
+  rewardType: 3
+  rewardAmount: 150
+  rewardDescription: Gain a new general to lead your armies.
+  prerequisiteQuestId: 13
