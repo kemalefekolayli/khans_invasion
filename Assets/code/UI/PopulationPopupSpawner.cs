@@ -5,6 +5,7 @@ using TMPro;
 /// Spawns floating text popups for population-related events.
 /// - Building housing: "+1000 max pop" 
 /// - Turn start population growth: "+X pop" (smaller text)
+/// Popups are pooled and reused to avoid GC churn.
 /// </summary>
 public class PopulationPopupSpawner : MonoBehaviour
 {
@@ -24,8 +25,18 @@ public class PopulationPopupSpawner : MonoBehaviour
     [Header("Position")]
     [SerializeField] private Vector3 spawnOffset = new Vector3(0, 0.5f, 0);
     
+    [Header("Object Pooling")]
+    [SerializeField] private int poolSize = 40;
+    
     [Header("Debug")]
     [SerializeField] private bool logPopups = false;
+    
+    private ComponentPool<FloatingPopupText> pool;
+    
+    private void Awake()
+    {
+        pool = new ComponentPool<FloatingPopupText>("PopupTextPool", transform, poolSize, CreatePopup);
+    }
     
     private void OnEnable()
     {
@@ -39,14 +50,6 @@ public class PopulationPopupSpawner : MonoBehaviour
         GameEvents.OnPopulationGrowth -= OnPopulationGrowth;
     }
     
-    private void Start()
-    {
-
-    }
-    
-    /// <summary>
-    /// Called when a building is constructed. Shows bonus for relevant buildings.
-    /// </summary>
     /// <summary>
     /// Called when a building is constructed. Shows benefit popup for all buildings.
     /// </summary>
@@ -133,15 +136,36 @@ public class PopulationPopupSpawner : MonoBehaviour
     /// </summary>
     private void SpawnPopupText(string message, Vector3 worldPosition, Color color, float fontSize)
     {
-        // Create text object
-        GameObject textObj = new GameObject($"PopupText_{message}");
-        textObj.transform.position = worldPosition;
+        FloatingPopupText popup = GetFromPool();
+        if (popup == null) return;
         
-        // Add TextMeshPro component
-        TextMeshPro tmp = textObj.AddComponent<TextMeshPro>();
+        // Configure text for this popup
+        TextMeshPro tmp = popup.GetComponent<TextMeshPro>();
         tmp.text = message;
         tmp.fontSize = fontSize;
         tmp.color = color;
+        
+        popup.Initialize(worldPosition, riseSpeed, lifetime);
+    }
+    
+    private FloatingPopupText GetFromPool()
+    {
+        FloatingPopupText popup = pool.Get();
+        if (popup != null)
+        {
+            popup.BindPool(pool);
+        }
+        return popup;
+    }
+    
+    private FloatingPopupText CreatePopup(Transform parent)
+    {
+        // Create text object
+        GameObject textObj = new GameObject("PopupText");
+        textObj.transform.SetParent(parent);
+        
+        // Add TextMeshPro component
+        TextMeshPro tmp = textObj.AddComponent<TextMeshPro>();
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.fontStyle = FontStyles.Bold;
         GameFontManager.Apply(tmp);
@@ -155,24 +179,35 @@ public class PopulationPopupSpawner : MonoBehaviour
         
         // Add floating behavior
         FloatingPopupText floatScript = textObj.AddComponent<FloatingPopupText>();
-        floatScript.Initialize(worldPosition, riseSpeed, lifetime);
         
         // Billboard (face camera)
         textObj.AddComponent<PopupBillboard>();
+        
+        return floatScript;
     }
 }
 
 /// <summary>
 /// Floating text animation component.
+/// Returns itself to its pool when the animation finishes.
 /// </summary>
 public class FloatingPopupText : MonoBehaviour
 {
+    private ComponentPool<FloatingPopupText> pool;
     private Vector3 startPosition;
     private float riseSpeed;
     private float lifetime;
     private float spawnTime;
     private TextMeshPro textMesh;
     private float startAlpha;
+    
+    /// <summary>
+    /// Associates this popup with a pool so it returns instead of being destroyed.
+    /// </summary>
+    public void BindPool(ComponentPool<FloatingPopupText> popupPool)
+    {
+        pool = popupPool;
+    }
     
     public void Initialize(Vector3 startPos, float rise, float life)
     {
@@ -184,8 +219,17 @@ public class FloatingPopupText : MonoBehaviour
         textMesh = GetComponent<TextMeshPro>();
         if (textMesh != null)
         {
+            // Reset alpha that may have faded out during the previous use
+            Color c = textMesh.color;
+            c.a = 1f;
+            textMesh.color = c;
             startAlpha = textMesh.color.a;
         }
+        
+        transform.position = startPos;
+        
+        // Activate (pooled popups start inactive)
+        gameObject.SetActive(true);
     }
     
     private void Update()
@@ -195,7 +239,15 @@ public class FloatingPopupText : MonoBehaviour
         
         if (progress >= 1f)
         {
-            Destroy(gameObject);
+            // Return to pool when finished (destroy if not pooled)
+            if (pool != null)
+            {
+                pool.Return(this);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
             return;
         }
         

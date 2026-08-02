@@ -5,6 +5,7 @@ using TMPro;
 /// Spawns floating loot text when provinces are raided.
 /// Attach to a manager object in the scene.
 /// Creates TextMeshPro in world space - no prefab needed!
+/// Popups are pooled and reused to avoid GC churn.
 /// </summary>
 public class LootPopupSpawner : MonoBehaviour
 {
@@ -24,6 +25,16 @@ public class LootPopupSpawner : MonoBehaviour
     [Header("Position Offset")]
     [SerializeField] private Vector3 spawnOffset = new Vector3(0, 2f, 0);
     
+    [Header("Object Pooling")]
+    [SerializeField] private int poolSize = 20;
+    
+    private ComponentPool<FloatingLootText> pool;
+    
+    private void Awake()
+    {
+        pool = new ComponentPool<FloatingLootText>("LootPopupPool", transform, poolSize, CreatePopup);
+    }
+    
     private void OnEnable()
     {
         GameEvents.OnProvinceRaided += OnProvinceRaided;
@@ -41,7 +52,7 @@ public class LootPopupSpawner : MonoBehaviour
         // Get spawn position (city center if available, otherwise province center)
         Vector3 spawnPosition = GetSpawnPosition(province);
         
-        // Create floating text
+        // Spawn floating text
         SpawnLootText(lootAmount, spawnPosition);
         
         GameLog.Log(GameLogCategory.Province, $"[LootPopupSpawner] Spawned '+{lootAmount:F0} Gold' at {province.provinceName}");
@@ -62,51 +73,64 @@ public class LootPopupSpawner : MonoBehaviour
     
     private void SpawnLootText(float lootAmount, Vector3 worldPosition)
     {
+        FloatingLootText popup = GetFromPool();
+        if (popup == null) return;
+        
+        popup.Initialize(lootAmount, worldPosition, riseSpeed, lifetime);
+    }
+    
+    private FloatingLootText GetFromPool()
+    {
+        FloatingLootText popup = pool.Get();
+        if (popup != null)
+        {
+            popup.BindPool(pool);
+        }
+        return popup;
+    }
+    
+    private FloatingLootText CreatePopup(Transform parent)
+    {
+        GameObject textObj;
+        
         if (lootTextPrefab != null)
         {
             // Use prefab
-            GameObject textObj = Instantiate(lootTextPrefab, worldPosition, Quaternion.identity);
-            FloatingLootText floatingText = textObj.GetComponent<FloatingLootText>();
-            if (floatingText != null)
-            {
-                floatingText.Initialize(lootAmount, worldPosition, riseSpeed, lifetime);
-            }
+            textObj = Instantiate(lootTextPrefab, parent);
         }
         else
         {
             // Create dynamically (no prefab needed)
-            CreateDynamicLootText(lootAmount, worldPosition);
+            textObj = new GameObject("LootPopup");
+            textObj.transform.SetParent(parent);
+            
+            // Add TextMeshPro component (3D World Space - NOT UGUI)
+            TextMeshPro tmp = textObj.AddComponent<TextMeshPro>();
+            tmp.fontSize = fontSize;
+            tmp.color = lootColor;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.fontStyle = FontStyles.Bold;
+            GameFontManager.Apply(tmp);
+            
+            // Outline for visibility
+            tmp.outlineWidth = outlineWidth;
+            tmp.outlineColor = Color.black;
+            
+            // Sorting order to appear above other sprites
+            tmp.sortingOrder = 100;
+            
+            // Billboard (face camera)
+            textObj.AddComponent<BillboardText>();
         }
-    }
-    
-    private void CreateDynamicLootText(float lootAmount, Vector3 worldPosition)
-    {
-        // Create text object
-        GameObject textObj = new GameObject($"LootText_+{lootAmount:F0}");
-        textObj.transform.position = worldPosition;
         
-        // Add TextMeshPro component (3D World Space - NOT UGUI)
-        TextMeshPro tmp = textObj.AddComponent<TextMeshPro>();
-        tmp.text = $"+{lootAmount:F0} Gold";
-        tmp.fontSize = fontSize;
-        tmp.color = lootColor;
-        tmp.alignment = TextAlignmentOptions.Center;
-        tmp.fontStyle = FontStyles.Bold;
-        GameFontManager.Apply(tmp);
+        // Add floating behavior (prefab is expected to have it, but don't assume)
+        FloatingLootText floatScript = textObj.GetComponent<FloatingLootText>();
+        if (floatScript == null)
+        {
+            floatScript = textObj.AddComponent<FloatingLootText>();
+        }
         
-        // Outline for visibility
-        tmp.outlineWidth = outlineWidth;
-        tmp.outlineColor = Color.black;
-        
-        // Sorting order to appear above other sprites
-        tmp.sortingOrder = 100;
-        
-        // Add floating behavior with our settings
-        FloatingLootText floatScript = textObj.AddComponent<FloatingLootText>();
-        floatScript.Initialize(lootAmount, worldPosition, riseSpeed, lifetime);
-        
-        // Billboard (face camera)
-        textObj.AddComponent<BillboardText>();
+        return floatScript;
     }
 }
 
