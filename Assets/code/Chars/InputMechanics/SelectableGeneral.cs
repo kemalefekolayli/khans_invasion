@@ -439,12 +439,16 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
     private bool IsPositionBlocked(Vector2 position)
     {
         int hitCount = Physics2D.OverlapPoint(position, _overlapFilter, _overlapResults);
+        bool overlapsProvince = false;
         for (int i = 0; i < hitCount; i++)
         {
             if (_overlapResults[i].CompareTag("River"))
                 return true;
+
+            if (_overlapResults[i].CompareTag("Province"))
+                overlapsProvince = true;
         }
-        return false;
+        return !overlapsProvince;
     }
     
     #endregion
