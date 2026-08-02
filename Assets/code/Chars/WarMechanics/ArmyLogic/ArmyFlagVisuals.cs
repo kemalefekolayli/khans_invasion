@@ -21,7 +21,6 @@ public class ArmyFlagVisuals : MonoBehaviour
     private Sprite fallbackOutlineSprite;
     private Sprite fallbackFillSprite;
     private NationModel lastOwner;
-    private Color lastColor;
 
     private void Awake()
     {
@@ -51,8 +50,7 @@ public class ArmyFlagVisuals : MonoBehaviour
         if (army == null) return;
 
         NationModel owner = army.OwnerNation;
-        Color ownerColor = GetOwnerColor(owner);
-        if (owner != lastOwner || ownerColor != lastColor)
+        if (owner != lastOwner)
         {
             RefreshFlag();
         }
@@ -81,7 +79,6 @@ public class ArmyFlagVisuals : MonoBehaviour
 
         ApplySorting();
         lastOwner = owner;
-        lastColor = ownerColor;
     }
 
     private void EnsureFlagRenderers()
