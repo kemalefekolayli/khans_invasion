@@ -691,7 +691,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   overrideFontAsset: {fileID: 0}
-  resourcesFontPath: Fonts/VCR_OSD_MONO_1.001
+  resourcesFontPath: Fonts/MedievalSharp
   cityNameFontAsset: {fileID: 0}
   cityNameColor: {r: 1, g: 1, b: 1, a: 1}
   cityNameFontSize: 36
