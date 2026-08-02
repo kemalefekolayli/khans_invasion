@@ -15,18 +15,19 @@ public class QuestPanelController : MonoBehaviour
     public RectTransform treeContent;
     
     [Header("Layout")]
-    public float nodeWidth = 200f;
-    public float nodeHeight = 140f;
-    public float columnSpacing = 210f;
-    public float rowSpacing = 200f;
-    public float treePadding = 20f;
+    public float nodeWidth = 130f;
+    public float nodeHeight = 90f;
+    public float columnSpacing = 160f;
+    public float rowSpacing = 140f;
+    public float treePadding = 15f;
     
     [Header("Connectors")]
-    public Color lockedConnectorColor = new Color(0.3f, 0.3f, 0.3f, 1f);
+    public Color lockedConnectorColor = new Color(0.55f, 0.55f, 0.55f, 1f);
     public Color unlockedConnectorColor = new Color(0.95f, 0.85f, 0.4f, 1f);
-    public float connectorThickness = 3f;
+    public float connectorThickness = 6f;
     
     private bool isOpen = false;
+    private Sprite whiteSprite;
     private readonly List<QuestItemUI> questItems = new List<QuestItemUI>();
     private readonly List<ConnectorData> connectors = new List<ConnectorData>();
     
@@ -229,6 +230,7 @@ public class QuestPanelController : MonoBehaviour
         
         Image image = lineObject.AddComponent<Image>();
         image.raycastTarget = false;
+        image.sprite = GetWhiteSprite();
         image.color = lockedConnectorColor;
         
         connectors.Add(new ConnectorData { image = image, childQuestId = childQuestId });
@@ -246,6 +248,19 @@ public class QuestPanelController : MonoBehaviour
                 ? unlockedConnectorColor
                 : lockedConnectorColor;
         }
+    }
+    
+    private Sprite GetWhiteSprite()
+    {
+        if (whiteSprite != null) return whiteSprite;
+
+        Texture2D texture = new Texture2D(1, 1);
+        texture.SetPixel(0, 0, Color.white);
+        texture.Apply();
+        texture.filterMode = FilterMode.Bilinear;
+        texture.wrapMode = TextureWrapMode.Clamp;
+        whiteSprite = Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
+        return whiteSprite;
     }
     
     /// <summary>
