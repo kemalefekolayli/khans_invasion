@@ -604,6 +604,12 @@ public class SiegeManager : MonoBehaviour, ITurnProcessor
         
         // Also fire the existing ProvinceOwnerChanged event for compatibility
         GameEvents.ProvinceOwnerChanged(province, oldOwner, newOwner);
+        
+        // Fire nation destroyed event if the old owner no longer has any provinces
+        if (oldOwner != null && oldOwner.provinceList != null && oldOwner.provinceList.Count == 0)
+        {
+            GameEvents.NationDestroyed(oldOwner);
+        }
     }
     
     #endregion

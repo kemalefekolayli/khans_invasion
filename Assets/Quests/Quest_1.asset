@@ -16,7 +16,7 @@ MonoBehaviour:
   questTitle: Raid 3 Provinces.
   questDescription: Raid three enemy provinces.
   questType: 0
-  targetCount: 1
+  targetCount: 3
   rewardType: 0
   rewardAmount: 100
   rewardDescription: Gain 100 gold.

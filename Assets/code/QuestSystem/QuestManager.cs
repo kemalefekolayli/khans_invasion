@@ -9,10 +9,6 @@ public class QuestManager : MonoBehaviour
     [Header("Quest Definitions")]
     public List<QuestData> allQuests = new List<QuestData>();
     
-    [Header("General Spawning")]
-    public GameObject generalPrefab;
-    public Transform generalSpawnPoint;
-    
     private Dictionary<int, int> questProgress = new Dictionary<int, int>();
     private HashSet<int> completedQuests = new HashSet<int>();
     private HashSet<int> claimedQuests = new HashSet<int>();
@@ -98,6 +94,9 @@ public class QuestManager : MonoBehaviour
     
     private void OnArmyDefeated(Army army)
     {
+        // Only count defeated armies NOT owned by the player nation
+        if (army?.OwnerNation == PlayerNation.Instance?.Nation) return;
+        
         IncrementProgress(QuestType.DefeatArmies);
     }
     
@@ -134,7 +133,7 @@ public class QuestManager : MonoBehaviour
         
         if (quest.prerequisiteQuestId < 0) return true;
         
-        return claimedQuests.Contains(quest.prerequisiteQuestId);
+        return completedQuests.Contains(quest.prerequisiteQuestId);
     }
     
     public bool IsQuestCompleted(int questId)
@@ -203,7 +202,7 @@ public class QuestManager : MonoBehaviour
                 break;
                 
             case RewardType.NewGeneral:
-                SpawnNewGeneral();
+                SpawnQuestRewardGeneral(quest.rewardAmount);
                 GameLog.Log(GameLogCategory.Core, "[QuestManager] Reward: New General spawned!");
                 break;
                 
@@ -214,31 +213,16 @@ public class QuestManager : MonoBehaviour
         }
     }
     
-    private void SpawnNewGeneral()
+    private void SpawnQuestRewardGeneral(int armySize)
     {
-        if (generalPrefab == null || generalSpawnPoint == null)
+        GeneralSpawner spawner = FindFirstObjectByType<GeneralSpawner>();
+        if (spawner == null)
         {
-            GameLog.Warning(GameLogCategory.Core, "[QuestManager] Cannot spawn general - prefab or spawn point not set");
+            GameLog.Warning(GameLogCategory.Core, "[QuestManager] GeneralSpawner not found - cannot spawn quest reward general");
             return;
         }
         
-        // Directly instantiate the general
-        GameObject generalObj = Instantiate(generalPrefab, generalSpawnPoint.position, Quaternion.identity);
-        generalObj.name = "General_QuestReward";
-        
-        SelectableGeneral selectable = generalObj.GetComponent<SelectableGeneral>();
-        if (selectable != null)
-        {
-            selectable.SetDisplayName("Quest General");
-            selectable.SetIsKhan(false);
-        }
-        
-        General general = generalObj.GetComponent<General>();
-        if (general == null)
-        {
-            general = generalObj.AddComponent<General>();
-        }
-        general.Initialize("Quest General", false);
+        spawner.SpawnQuestRewardGeneral("Quest General", armySize);
         
         GameLog.Log(GameLogCategory.Core, "[QuestManager] New general spawned as quest reward!");
     }
