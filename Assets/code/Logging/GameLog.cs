@@ -27,24 +27,30 @@ public static class GameLog
     {
         if (!IsEnabled(category)) return;
 
-        if (context != null) Debug.Log(Format(category, message), context);
-        else Debug.Log(Format(category, message));
+        string line = Format(category, message);
+        if (context != null) Debug.Log(line, context);
+        else Debug.Log(line);
+        GameLogFileSink.Write(line);
     }
 
     public static void Warning(GameLogCategory category, object message, Object context = null)
     {
         if (!showWarnings || !IsEnabled(category)) return;
 
-        if (context != null) Debug.LogWarning(Format(category, message), context);
-        else Debug.LogWarning(Format(category, message));
+        string line = Format(category, message);
+        if (context != null) Debug.LogWarning(line, context);
+        else Debug.LogWarning(line);
+        GameLogFileSink.Write(line);
     }
 
     public static void Error(GameLogCategory category, object message, Object context = null)
     {
         if (!showErrors || !IsEnabled(category)) return;
 
-        if (context != null) Debug.LogError(Format(category, message), context);
-        else Debug.LogError(Format(category, message));
+        string line = Format(category, message);
+        if (context != null) Debug.LogError(line, context);
+        else Debug.LogError(line);
+        GameLogFileSink.Write(line);
     }
 
     private static GameLogCategory GetActiveCategories()
