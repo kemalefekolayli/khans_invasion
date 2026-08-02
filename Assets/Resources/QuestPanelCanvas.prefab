@@ -443,8 +443,8 @@ MonoBehaviour:
   tooltipPanel: {fileID: 3903242404898732348}
   titleText: {fileID: 6438980011898094113}
   descriptionText: {fileID: 6369227307952002532}
-  progressText: {fileID: 8289651990725918328}
-  rewardText: {fileID: 4196100434094220270}
+  progressText: {fileID: 4196100434094220270}
+  rewardText: {fileID: 8289651990725918328}
   offset: {x: 10, y: -10}
 --- !u!1 &7693798458764956193
 GameObject:
