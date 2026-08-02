@@ -12,6 +12,10 @@ public class GameLogManager : MonoBehaviour
     [SerializeField] private bool showWarnings = true;
     [SerializeField] private bool showErrors = true;
 
+    [Header("File Sink")]
+    [SerializeField] private bool fileLoggingEnabled = true;
+    [SerializeField] private string logFilePath = "Logs/game_log.txt";
+
     private void Awake()
     {
         Apply();
@@ -26,5 +30,6 @@ public class GameLogManager : MonoBehaviour
     public void Apply()
     {
         GameLog.Configure(profile, customCategories, showWarnings, showErrors);
+        GameLogFileSink.Configure(fileLoggingEnabled ? logFilePath : null);
     }
 }
