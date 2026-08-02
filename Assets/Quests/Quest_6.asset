@@ -18,6 +18,6 @@ MonoBehaviour:
   questType: 5
   targetCount: 1
   rewardType: 4
-  rewardAmount: 0
-  rewardDescription: Gain 100 gold.
+  rewardAmount: 1
+  rewardDescription: Unlock the Move Capital ability.
   prerequisiteQuestId: 4

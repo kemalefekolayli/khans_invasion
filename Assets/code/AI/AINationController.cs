@@ -582,6 +582,12 @@ public class AINationController
 
         GameEvents.ProvinceConquered(province, oldOwner, newOwner);
         GameEvents.ProvinceOwnerChanged(province, oldOwner, newOwner);
+
+        // Fire nation destroyed event if the old owner no longer has any provinces
+        if (oldOwner != null && oldOwner.provinceList != null && oldOwner.provinceList.Count == 0)
+        {
+            GameEvents.NationDestroyed(oldOwner);
+        }
     }
 
     private void PickBestTarget(AIWarContext warContext, AIWorldIntelCache worldIntel)

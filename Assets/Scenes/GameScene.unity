@@ -1195,8 +1195,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0cf3ffc73d663a54da0daca8517dc0dd, type: 2}
   - {fileID: 11400000, guid: 9216a4431153f6641b002ce5908fccb4, type: 2}
   - {fileID: 11400000, guid: bd256857032027748b4bb0762225e856, type: 2}
-  generalPrefab: {fileID: 2603496232830190664, guid: 1bae9555b1a52e949ad28d93888a686b, type: 3}
-  generalSpawnPoint: {fileID: 0}
+  - {fileID: 11400000, guid: a303f095fe2248c42ac336a5bb4132d7, type: 2}
 --- !u!4 &1319164321
 Transform:
   m_ObjectHideFlags: 0

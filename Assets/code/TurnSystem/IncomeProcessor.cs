@@ -63,7 +63,7 @@ public class IncomeProcessor : MonoBehaviour, ITurnProcessor
         
         // Calculate income with multipliers
         float taxIncome = playerNation.TaxIncome * taxMultiplier;
-        float tradeIncome = playerNation.TradeIncome * tradeMultiplier;
+        float tradeIncome = (playerNation.TradeIncome + playerNation.bonusTradeIncome) * tradeMultiplier;
         float totalIncome = taxIncome + tradeIncome;
         
         // Add to player's gold
