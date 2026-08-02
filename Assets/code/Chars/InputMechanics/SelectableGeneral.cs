@@ -58,6 +58,13 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
     private HashSet<ProvinceModel> _currentProvinces = new HashSet<ProvinceModel>();
     private ProvinceModel _currentProvince;
     private CityCenter _currentCityCenter;
+
+    // Reused non-alloc physics query state (province / city-center / river detection)
+    private Collider2D[] _overlapResults = new Collider2D[64];
+    private ContactFilter2D _overlapFilter;
+    private Vector2 _lastScanPosition = Vector2.positiveInfinity;
+    // Only re-scan when the general has actually moved this far; an idle general's overlap results cannot change.
+    private const float SCAN_REPOSITION_THRESHOLD = 0.05f;
     
     // Properties
     public string DisplayName => displayName;
@@ -107,6 +114,15 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
         // Set default display name if not set
         if (string.IsNullOrEmpty(displayName))
             displayName = gameObject.name;
+
+        // Build the physics query filter once: trigger colliders on the Default layer
+        // (all province / river / city-center colliders live on layer 0).
+        _overlapFilter = new ContactFilter2D
+        {
+            useTriggers = true,
+            useLayerMask = true,
+            layerMask = LayerMask.GetMask("Default")
+        };
     }
     
     private void OnEnable()
@@ -164,8 +180,16 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
         }
         
         HandleInput();
-        CheckCurrentProvince();
-        CheckCityCenter();
+
+        // Only re-scan when the general has actually moved; an idle general's
+        // overlap results cannot change between frames.
+        Vector2 currentPosition = transform.position;
+        if ((currentPosition - _lastScanPosition).sqrMagnitude > SCAN_REPOSITION_THRESHOLD * SCAN_REPOSITION_THRESHOLD)
+        {
+            _lastScanPosition = currentPosition;
+            CheckCurrentProvince();
+            CheckCityCenter();
+        }
     }
     
     private void FixedUpdate()
@@ -340,13 +364,14 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
     
     private void CheckCurrentProvince()
     {
-        Collider2D[] hits = Physics2D.OverlapPointAll(transform.position);
+        int hitCount = Physics2D.OverlapPoint(transform.position, _overlapFilter, _overlapResults);
         
         _currentProvinces.Clear();
         ProvinceModel topProvince = null;
         
-        foreach (var hit in hits)
+        for (int i = 0; i < hitCount; i++)
         {
+            Collider2D hit = _overlapResults[i];
             if (hit.CompareTag("Province"))
             {
                 ProvinceModel province = hit.GetComponent<ProvinceModel>();
@@ -374,12 +399,13 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
     
     private void CheckCityCenter()
     {
-        Collider2D[] hits = Physics2D.OverlapPointAll(transform.position);
+        int hitCount = Physics2D.OverlapPoint(transform.position, _overlapFilter, _overlapResults);
         
         CityCenter detectedCityCenter = null;
         
-        foreach (var hit in hits)
+        for (int i = 0; i < hitCount; i++)
         {
+            Collider2D hit = _overlapResults[i];
             if (hit.CompareTag("CityCenter"))
             {
                 CityCenter center = hit.GetComponent<CityCenter>();
@@ -412,10 +438,10 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
     
     private bool IsPositionBlocked(Vector2 position)
     {
-        Collider2D[] hits = Physics2D.OverlapPointAll(position);
-        foreach (var hit in hits)
+        int hitCount = Physics2D.OverlapPoint(position, _overlapFilter, _overlapResults);
+        for (int i = 0; i < hitCount; i++)
         {
-            if (hit.CompareTag("River"))
+            if (_overlapResults[i].CompareTag("River"))
                 return true;
         }
         return false;
@@ -530,6 +556,7 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
         // Force province check after teleport
         CheckCurrentProvince();
         CheckCityCenter();
+        _lastScanPosition = transform.position;
     }
     
     #endregion
