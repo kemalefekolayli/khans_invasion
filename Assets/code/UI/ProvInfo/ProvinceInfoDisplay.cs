@@ -32,12 +32,43 @@ public class ProvinceInfoDisplay : MonoBehaviour
     {
         GameEvents.OnProvinceEnter += OnProvinceEnter;
         GameEvents.OnProvinceExit += OnProvinceExit;
+        GameEvents.OnBuildingConstructed += OnBuildingConstructed;
+        GameEvents.OnPopulationGrowth += OnPopulationGrowth;
+        GameEvents.OnPlayerStatsChanged += OnPlayerStatsChanged;
     }
 
     private void OnDisable()
     {
         GameEvents.OnProvinceEnter -= OnProvinceEnter;
         GameEvents.OnProvinceExit -= OnProvinceExit;
+        GameEvents.OnBuildingConstructed -= OnBuildingConstructed;
+        GameEvents.OnPopulationGrowth -= OnPopulationGrowth;
+        GameEvents.OnPlayerStatsChanged -= OnPlayerStatsChanged;
+    }
+
+    private void OnBuildingConstructed(ProvinceModel province, string buildingType)
+    {
+        if (province != null && province == currentProvince)
+        {
+            UpdateDisplay();
+        }
+    }
+
+    private void OnPopulationGrowth(ProvinceModel province, float growthAmount)
+    {
+        if (province != null && province == currentProvince)
+        {
+            UpdateDisplay();
+        }
+    }
+
+    private void OnPlayerStatsChanged()
+    {
+        // Recruiting, building gold cost, etc. mutate the current province in place.
+        if (currentProvince != null && isVisible)
+        {
+            UpdateDisplay();
+        }
     }
 
     private void OnProvinceEnter(ProvinceModel province)

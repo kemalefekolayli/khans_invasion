@@ -11,11 +11,11 @@ public class GameFontManager : MonoBehaviour
     [Tooltip("Optional direct TMP font asset. If assigned, this wins over the Resources font path.")]
     [SerializeField] private TMP_FontAsset overrideFontAsset;
 
-    [Tooltip("Unity Font loaded from Assets/Resources. Default points to Assets/Resources/Fonts/KiwiSoda.ttf")]
-    [SerializeField] private string resourcesFontPath = "Fonts/KiwiSoda";
+    [Tooltip("Unity Font loaded from Assets/Resources. Default points to Assets/Resources/Fonts/MedievalSharp.ttf")]
+    [SerializeField] private string resourcesFontPath = "Fonts/MedievalSharp";
 
     [Header("City Name Font")]
-    [Tooltip("Optional TMP font for province/city names. Leave empty to use TextMesh Pro's default font.")]
+    [Tooltip("Optional TMP font for province/city names. Leave empty to use the runtime font.")]
     [SerializeField] private TMP_FontAsset cityNameFontAsset;
     [SerializeField] private Color cityNameColor = Color.white;
     [SerializeField] private float cityNameFontSize = 36f;
@@ -35,7 +35,7 @@ public class GameFontManager : MonoBehaviour
     private float nextScanTime;
 
     public TMP_FontAsset ActiveFont => overrideFontAsset != null ? overrideFontAsset : runtimeFontAsset;
-    public TMP_FontAsset CityNameFont => cityNameFontAsset != null ? cityNameFontAsset : TMP_Settings.defaultFontAsset;
+    public TMP_FontAsset CityNameFont => cityNameFontAsset != null ? cityNameFontAsset : ActiveFont;
     public Color CityNameColor => cityNameColor;
     public float CityNameFontSize => cityNameFontSize;
 
