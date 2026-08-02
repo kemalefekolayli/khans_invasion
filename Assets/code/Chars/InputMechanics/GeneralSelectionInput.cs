@@ -24,6 +24,13 @@ public class GeneralSelectionInput : MonoBehaviour
     [Tooltip("Key to deselect all (optional)")]
     public Key deselectKey = Key.None;
     
+    private static readonly Key[] numberKeys = new Key[]
+    {
+        Key.Digit1, Key.Digit2, Key.Digit3,
+        Key.Digit4, Key.Digit5, Key.Digit6,
+        Key.Digit7, Key.Digit8, Key.Digit9
+    };
+
     private GeneralSelectionManager manager;
     
     private void Start()
@@ -65,15 +72,7 @@ public class GeneralSelectionInput : MonoBehaviour
     private void HandleNumberKeys()
     {
         if (!enableNumberKeys) return;
-        
-        // Keys 1-9 select generals by index
-        Key[] numberKeys = new Key[]
-        {
-            Key.Digit1, Key.Digit2, Key.Digit3,
-            Key.Digit4, Key.Digit5, Key.Digit6,
-            Key.Digit7, Key.Digit8, Key.Digit9
-        };
-        
+
         for (int i = 0; i < numberKeys.Length; i++)
         {
             if (Keyboard.current[numberKeys[i]].wasPressedThisFrame)
