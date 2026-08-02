@@ -53,6 +53,8 @@ public class ProvinceNameDisplay : MonoBehaviour
 
     private void OnEnable()
     {
+        GameFontManager.RegisterCityNameText(provinceNameText);
+
         GameEvents.OnProvinceEnter += OnProvinceEnter;
         GameEvents.OnProvinceExit += OnProvinceExit;
         GameEvents.OnProvinceDataLoaded += RefreshCurrentProvinceName;
@@ -68,6 +70,8 @@ public class ProvinceNameDisplay : MonoBehaviour
 
     private void OnDisable()
     {
+        GameFontManager.UnregisterCityNameText(provinceNameText);
+
         GameEvents.OnProvinceEnter -= OnProvinceEnter;
         GameEvents.OnProvinceExit -= OnProvinceExit;
         GameEvents.OnProvinceDataLoaded -= RefreshCurrentProvinceName;

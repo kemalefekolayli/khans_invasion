@@ -31,6 +31,7 @@ public class GameFontManager : MonoBehaviour
 
     private TMP_FontAsset runtimeFontAsset;
     private readonly HashSet<TMP_Text> appliedTexts = new HashSet<TMP_Text>();
+    private static readonly HashSet<TMP_Text> cityNameTexts = new HashSet<TMP_Text>();
     private float nextScanTime;
 
     public TMP_FontAsset ActiveFont => overrideFontAsset != null ? overrideFontAsset : runtimeFontAsset;
@@ -193,20 +194,17 @@ public class GameFontManager : MonoBehaviour
 
     private bool IsCityNameText(TMP_Text text)
     {
-        if (text == null) return false;
-        if (text.GetComponentInParent<ProvinceNameDisplay>() != null) return true;
-        if (text.gameObject.name == "ProvinceNameText") return true;
+        return text != null && cityNameTexts.Contains(text);
+    }
 
-        ProvinceNameDisplay[] displays = FindObjectsByType<ProvinceNameDisplay>(FindObjectsSortMode.None);
-        foreach (ProvinceNameDisplay display in displays)
-        {
-            if (display != null && display.provinceNameText == text)
-            {
-                return true;
-            }
-        }
+    public static void RegisterCityNameText(TMP_Text text)
+    {
+        if (text != null) cityNameTexts.Add(text);
+    }
 
-        return false;
+    public static void UnregisterCityNameText(TMP_Text text)
+    {
+        if (text != null) cityNameTexts.Remove(text);
     }
 
     public void SetOverrideFont(TMP_FontAsset fontAsset)
