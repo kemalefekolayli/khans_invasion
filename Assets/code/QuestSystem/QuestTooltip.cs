@@ -53,8 +53,9 @@ public class QuestTooltip : MonoBehaviour
         
         currentQuest = quest;
         UpdateContent();
-        UpdatePosition(position);
         tooltipPanel.SetActive(true);
+        Canvas.ForceUpdateCanvases();
+        UpdatePosition(position);
     }
     
     public void Hide()
@@ -69,16 +70,39 @@ public class QuestTooltip : MonoBehaviour
     public void UpdatePosition(Vector3 screenPosition)
     {
         if (tooltipRect == null || parentCanvas == null) return;
+
+        RectTransform parentRect = tooltipRect.parent as RectTransform;
+        if (parentRect == null) return;
         
         Vector2 localPoint;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            parentCanvas.transform as RectTransform,
+            parentRect,
             screenPosition,
-            parentCanvas.worldCamera,
+            GetCanvasCamera(),
             out localPoint
         );
         
-        tooltipRect.anchoredPosition = localPoint + offset;
+        Vector2 desiredPivotPosition = localPoint + offset;
+        Vector2 tooltipSize = tooltipRect.rect.size;
+        Rect parentBounds = parentRect.rect;
+
+        // Clamp the tooltip's pivot, rather than its anchored position. This keeps
+        // the whole panel inside the canvas even when the pointer is at an edge.
+        Vector2 pivotMinimum = parentBounds.min + Vector2.Scale(tooltipSize, tooltipRect.pivot);
+        Vector2 pivotMaximum = parentBounds.max - Vector2.Scale(tooltipSize, Vector2.one - tooltipRect.pivot);
+        desiredPivotPosition.x = Mathf.Clamp(desiredPivotPosition.x, pivotMinimum.x, pivotMaximum.x);
+        desiredPivotPosition.y = Mathf.Clamp(desiredPivotPosition.y, pivotMinimum.y, pivotMaximum.y);
+
+        Vector2 anchorReference = parentBounds.min + Vector2.Scale(parentBounds.size, tooltipRect.anchorMin);
+        tooltipRect.anchoredPosition = desiredPivotPosition - anchorReference;
+    }
+
+    private Camera GetCanvasCamera()
+    {
+        if (parentCanvas == null || parentCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
+            return null;
+
+        return parentCanvas.worldCamera;
     }
     
     private void UpdateContent()

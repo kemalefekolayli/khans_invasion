@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 
 public class CameraController : MonoBehaviour
 {
@@ -50,6 +51,8 @@ public class CameraController : MonoBehaviour
 
     void HandleZoom()
     {
+        if (IsPointerOverUI()) return;
+
         // Mouse scroll wheel
         if (Mouse.current != null)
         {
@@ -62,6 +65,14 @@ public class CameraController : MonoBehaviour
     void HandleDrag()
     {
         if (Mouse.current == null) return;
+
+        if (IsPointerOverUI())
+        {
+            // A drag that started over a UI panel must never become a world drag
+            // when the pointer leaves the panel.
+            isDragging = false;
+            return;
+        }
 
         // Sağ tık ile sürükleme
         if (Mouse.current.rightButton.wasPressedThisFrame)
@@ -97,9 +108,33 @@ public class CameraController : MonoBehaviour
 
     public void OnZoom(InputAction.CallbackContext context)
     {
+        if (IsPointerOverUI()) return;
+
         float scroll = context.ReadValue<Vector2>().y;
         cam.orthographicSize -= scroll * zoomSpeed * 0.01f;
         cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, minZoom, maxZoom);
+    }
+
+    private bool IsPointerOverUI()
+    {
+        if (Mouse.current == null) return false;
+
+        EventSystem eventSystem = EventSystem.current;
+        if (eventSystem != null && eventSystem.IsPointerOverGameObject())
+            return true;
+
+        // IsPointerOverGameObject can lag one UI event behind the camera Update.
+        // Check the quest panel bounds directly so the first wheel/drag event is
+        // isolated as well.
+        QuestPanelController questPanel = QuestPanelController.Instance;
+        if (questPanel == null || !questPanel.IsOpen || questPanel.questPanel == null)
+            return false;
+
+        RectTransform panelRect = questPanel.questPanel.GetComponent<RectTransform>();
+        return panelRect != null && RectTransformUtility.RectangleContainsScreenPoint(
+            panelRect,
+            Mouse.current.position.ReadValue(),
+            null);
     }
 
     public void SetCameraPosition(Vector2 position)
