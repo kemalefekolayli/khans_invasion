@@ -19,6 +19,7 @@ public class QuestTooltip : MonoBehaviour
     private Canvas parentCanvas;
     private QuestData currentQuest;
     private CanvasGroup canvasGroup;
+    private QuestManager subscribedQuestManager;
     
     private void Awake()
     {
@@ -46,11 +47,43 @@ public class QuestTooltip : MonoBehaviour
             Hide();
         }
     }
+
+    private void OnEnable()
+    {
+        SubscribeToQuestManager();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeFromQuestManager();
+    }
+
+    private void SubscribeToQuestManager()
+    {
+        QuestManager manager = QuestManager.Instance;
+        if (manager == subscribedQuestManager) return;
+
+        UnsubscribeFromQuestManager();
+        if (manager != null)
+        {
+            manager.OnQuestTargetsInitialized += OnQuestTargetsInitialized;
+            subscribedQuestManager = manager;
+        }
+    }
+
+    private void UnsubscribeFromQuestManager()
+    {
+        if (subscribedQuestManager == null) return;
+
+        subscribedQuestManager.OnQuestTargetsInitialized -= OnQuestTargetsInitialized;
+        subscribedQuestManager = null;
+    }
     
     public void Show(QuestData quest, Vector3 position)
     {
         if (tooltipPanel == null || quest == null) return;
         
+        SubscribeToQuestManager();
         currentQuest = quest;
         UpdateContent();
         tooltipPanel.SetActive(true);
@@ -122,17 +155,27 @@ public class QuestTooltip : MonoBehaviour
         if (progressText != null)
         {
             int current = 0;
-            if (QuestManager.Instance != null)
+            int target = 0;
+            QuestManager manager = QuestManager.Instance;
+            if (manager != null)
             {
-                current = QuestManager.Instance.GetQuestProgress(currentQuest.questId);
+                current = manager.GetQuestProgress(currentQuest.questId);
+                target = manager.GetEffectiveTarget(currentQuest.questId);
             }
-            progressText.text = $"Progress: {current}/{currentQuest.targetCount}";
+            progressText.text = $"Progress: {current}/{target}";
         }
         
         if (rewardText != null)
         {
             rewardText.text = $"Reward: {currentQuest.rewardDescription}";
         }
+    }
+
+    private void OnQuestTargetsInitialized()
+    {
+        if (currentQuest == null || tooltipPanel == null || !tooltipPanel.activeSelf) return;
+
+        UpdateContent();
     }
 }
 
