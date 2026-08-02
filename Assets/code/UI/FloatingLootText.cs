@@ -4,6 +4,7 @@ using TMPro;
 /// <summary>
 /// Floating text that displays loot gained and fades away.
 /// Spawns above city center when a province is raided.
+/// Returns itself to its pool when the animation finishes.
 /// </summary>
 public class FloatingLootText : MonoBehaviour
 {
@@ -15,6 +16,7 @@ public class FloatingLootText : MonoBehaviour
     [Header("References")]
     [SerializeField] private TMP_Text textComponent;
     
+    private ComponentPool<FloatingLootText> pool;
     private float spawnTime;
     private Vector3 startPosition;
     private Color startColor;
@@ -39,11 +41,11 @@ public class FloatingLootText : MonoBehaviour
     }
     
     /// <summary>
-    /// Initialize with default settings (from SerializeField values)
+    /// Associates this popup with a pool so it returns instead of being destroyed.
     /// </summary>
-    public void Initialize(float lootAmount, Vector3 worldPosition)
+    public void BindPool(ComponentPool<FloatingLootText> popupPool)
     {
-        Initialize(lootAmount, worldPosition, riseSpeed, lifetime);
+        pool = popupPool;
     }
     
     /// <summary>
@@ -68,6 +70,9 @@ public class FloatingLootText : MonoBehaviour
         
         // Position
         transform.position = worldPosition + Vector3.up * 0.5f;
+        
+        // Activate (pooled popups start inactive)
+        gameObject.SetActive(true);
     }
     
     private void Update()
@@ -90,10 +95,17 @@ public class FloatingLootText : MonoBehaviour
             }
         }
         
-        // Destroy after lifetime
+        // Return to pool after lifetime (destroy if not pooled)
         if (elapsed >= lifetime)
         {
-            Destroy(gameObject);
+            if (pool != null)
+            {
+                pool.Return(this);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
     }
 }

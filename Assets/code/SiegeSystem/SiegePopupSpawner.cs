@@ -4,7 +4,7 @@ using TMPro;
 /// <summary>
 /// Spawns floating text when siege events occur.
 /// Shows "SIEGE STARTED!" when siege begins and "SIEGE SUCCESSFUL!" when conquered.
-/// Similar pattern to LootPopupSpawner.
+/// Similar pattern to LootPopupSpawner. Popups are pooled and reused to avoid GC churn.
 /// </summary>
 public class SiegePopupSpawner : MonoBehaviour
 {
@@ -26,6 +26,16 @@ public class SiegePopupSpawner : MonoBehaviour
     
     [Header("Position Offset")]
     [SerializeField] private Vector3 spawnOffset = new Vector3(0, 2.5f, 0);
+    
+    [Header("Object Pooling")]
+    [SerializeField] private int poolSize = 20;
+    
+    private ComponentPool<FloatingSiegeText> pool;
+    
+    private void Awake()
+    {
+        pool = new ComponentPool<FloatingSiegeText>("SiegePopupPool", transform, poolSize, CreatePopup);
+    }
     
     private void OnEnable()
     {
@@ -142,15 +152,36 @@ public class SiegePopupSpawner : MonoBehaviour
     
     private void SpawnSiegeText(string message, Vector3 worldPosition, Color color, float fontSizeOverride = -1f)
     {
-        // Create text object
-        GameObject textObj = new GameObject($"SiegeText_{message}");
-        textObj.transform.position = worldPosition;
+        FloatingSiegeText popup = GetFromPool();
+        if (popup == null) return;
         
-        // Add TextMeshPro component (3D World Space)
-        TextMeshPro tmp = textObj.AddComponent<TextMeshPro>();
+        // Configure text for this message
+        TextMeshPro tmp = popup.GetComponent<TextMeshPro>();
         tmp.text = message;
         tmp.fontSize = fontSizeOverride > 0 ? fontSizeOverride : fontSize;
         tmp.color = color;
+        
+        popup.Initialize(worldPosition, riseSpeed, lifetime);
+    }
+    
+    private FloatingSiegeText GetFromPool()
+    {
+        FloatingSiegeText popup = pool.Get();
+        if (popup != null)
+        {
+            popup.BindPool(pool);
+        }
+        return popup;
+    }
+    
+    private FloatingSiegeText CreatePopup(Transform parent)
+    {
+        // Create text object
+        GameObject textObj = new GameObject("SiegePopup");
+        textObj.transform.SetParent(parent);
+        
+        // Add TextMeshPro component (3D World Space)
+        TextMeshPro tmp = textObj.AddComponent<TextMeshPro>();
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.fontStyle = FontStyles.Bold;
         
@@ -163,23 +194,34 @@ public class SiegePopupSpawner : MonoBehaviour
         
         // Add floating behavior
         FloatingSiegeText floatScript = textObj.AddComponent<FloatingSiegeText>();
-        floatScript.Initialize(worldPosition, riseSpeed, lifetime);
         
         // Billboard (face camera)
         textObj.AddComponent<SiegeBillboard>();
+        
+        return floatScript;
     }
 }
 
 /// <summary>
 /// Floating text behavior for siege popups.
+/// Returns itself to its pool when the animation finishes.
 /// </summary>
 public class FloatingSiegeText : MonoBehaviour
 {
+    private ComponentPool<FloatingSiegeText> pool;
     private Vector3 startPosition;
     private float riseSpeed;
     private float lifetime;
     private float elapsedTime;
     private TextMeshPro textMesh;
+    
+    /// <summary>
+    /// Associates this popup with a pool so it returns instead of being destroyed.
+    /// </summary>
+    public void BindPool(ComponentPool<FloatingSiegeText> popupPool)
+    {
+        pool = popupPool;
+    }
     
     public void Initialize(Vector3 start, float speed, float life)
     {
@@ -187,7 +229,20 @@ public class FloatingSiegeText : MonoBehaviour
         riseSpeed = speed;
         lifetime = life;
         elapsedTime = 0f;
+        
         textMesh = GetComponent<TextMeshPro>();
+        if (textMesh != null)
+        {
+            // Reset alpha that may have faded out during the previous use
+            Color c = textMesh.color;
+            c.a = 1f;
+            textMesh.color = c;
+        }
+        
+        transform.position = start;
+        
+        // Activate (pooled popups start inactive)
+        gameObject.SetActive(true);
     }
     
     private void Update()
@@ -206,10 +261,17 @@ public class FloatingSiegeText : MonoBehaviour
             textMesh.color = c;
         }
         
-        // Destroy when lifetime expires
+        // Return to pool when lifetime expires (destroy if not pooled)
         if (elapsedTime >= lifetime)
         {
-            Destroy(gameObject);
+            if (pool != null)
+            {
+                pool.Return(this);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
     }
 }
