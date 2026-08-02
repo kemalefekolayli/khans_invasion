@@ -1,0 +1,41 @@
+T1.8 - Fix quest tree panel coordinates (step 1 of user-feedback batch)
+=======================================================================
+Priority: high
+Branch: feature/t1.8-quest-panel-fix
+
+User feedback (batched, step 1 = visuals):
+- (2) scroll still doesn't work / not open; 5 lines clustered on the LEFT,
+  purpose unclear.
+- (3) no visible lines between quests - can't tell which quest leads to
+  which.
+- (6) scroll is for keeping all quests inside the blue panel; some quest
+  squares currently sit below/outside the blue area.
+- (7) the white thing on the left (scrollbar) can't be selected because
+  something (a quest/line) sits on top of it.
+
+Root cause (found in code):
+- QuestPanelController.CreateConnectors passes the RAW column index from
+  nodeX (0,1,2,...) as the connector's x pixel position, while quest items
+  are placed at treePadding + x*columnSpacing. So all connectors bunch at
+  x~0..8 (the "5 lines on the left"), overlap the left scrollbar, and never
+  appear between quests.
+- The first column / first row quest nodes poke outside the content top-left
+  because items are centered at x=treePadding, y=-treePadding without half
+  nodeWidth/nodeHeight offset, clipping under the scrollbar gutter and above
+  the viewport.
+
+Fix (QuestPanelController.cs only, no prefab change needed):
+- Add ColumnX(float col) => treePadding + nodeWidth*0.5 + col*columnSpacing
+  and RowY(int depth) => -(treePadding + nodeHeight*0.5 + depth*rowSpacing).
+- Use them for both quest item placement AND connector positions.
+- contentWidth  = nodeWidth  + (leafCount-1)*columnSpacing + 2*treePadding
+  contentHeight = nodeHeight + maxDepth*rowSpacing        + 2*treePadding
+  so nodes and connectors stay inside the content rect and inside the
+  viewport (blue area), enabling scroll.
+- With nodeHeight=90, rowSpacing=140, maxDepth=5 -> contentHeight=820 vs
+  viewport ~680 -> vertical scroll engages. leafCount=7 -> width 1120 vs
+  viewport 1374 -> fits horizontally.
+
+Verification: user checks Unity play/editor mode. Keep diff small.
+Later steps (separate tickets): (4) completion order gating, (5) claim
+order gating, (1) pink panel size.

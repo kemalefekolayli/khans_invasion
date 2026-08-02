@@ -147,15 +147,15 @@ public class QuestPanelController : MonoBehaviour
             }
         }
         
-        float contentWidth = Mathf.Max(1, leafCount) * columnSpacing + treePadding * 2f;
-        float contentHeight = (maxDepth + 1) * rowSpacing + treePadding * 2f;
+        float contentWidth = nodeWidth + Mathf.Max(0, leafCount - 1) * columnSpacing + treePadding * 2f;
+        float contentHeight = nodeHeight + maxDepth * rowSpacing + treePadding * 2f;
         treeContent.sizeDelta = new Vector2(contentWidth, contentHeight);
         
         foreach (QuestData quest in quests)
         {
             int questDepth = depth.TryGetValue(quest.questId, out int d) ? d : 0;
             float x = nodeX.TryGetValue(quest.questId, out float xPos) ? xPos : 0f;
-            CreateQuestItem(quest, treePadding + x * columnSpacing, -(treePadding + questDepth * rowSpacing));
+            CreateQuestItem(quest, ColumnX(x), RowY(questDepth));
         }
         
         CreateConnectors(quests, childrenByParent, nodeX, depth);
@@ -173,19 +173,31 @@ public class QuestPanelController : MonoBehaviour
         {
             QuestData parent = FindQuest(quests, pair.Key);
             if (parent == null) continue;
-            if (!nodeX.TryGetValue(parent.questId, out float parentX)) continue;
+            if (!nodeX.TryGetValue(parent.questId, out float parentCol)) continue;
             int parentDepth = depth.TryGetValue(parent.questId, out int pd) ? pd : 0;
-            float parentCenterY = -(treePadding + parentDepth * rowSpacing);
+            float parentCenterX = ColumnX(parentCol);
+            float parentCenterY = RowY(parentDepth);
             
             foreach (QuestData child in pair.Value)
             {
-                if (!nodeX.TryGetValue(child.questId, out float childX)) continue;
+                if (!nodeX.TryGetValue(child.questId, out float childCol)) continue;
                 int childDepth = depth.TryGetValue(child.questId, out int cd) ? cd : 0;
-                float childCenterY = -(treePadding + childDepth * rowSpacing);
+                float childCenterX = ColumnX(childCol);
+                float childCenterY = RowY(childDepth);
                 
-                CreateConnectorSegment(parentX, parentCenterY, childX, childCenterY, child.questId);
+                CreateConnectorSegment(parentCenterX, parentCenterY, childCenterX, childCenterY, child.questId);
             }
         }
+    }
+    
+    private float ColumnX(float column)
+    {
+        return treePadding + nodeWidth * 0.5f + column * columnSpacing;
+    }
+    
+    private float RowY(int depth)
+    {
+        return -(treePadding + nodeHeight * 0.5f + depth * rowSpacing);
     }
     
     private void CreateConnectorSegment(float parentCenterX, float parentCenterY, float childCenterX, float childCenterY, int childQuestId)
