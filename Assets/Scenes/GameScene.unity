@@ -383,6 +383,7 @@ MonoBehaviour:
   riseSpeed: 1.5
   lifetime: 2.5
   spawnOffset: {x: 0, y: 2, z: 0}
+  poolSize: 20
 --- !u!114 &226710245
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1083,6 +1084,7 @@ MonoBehaviour:
   riseSpeed: 1
   lifetime: 2.5
   spawnOffset: {x: 0, y: 0.5, z: 0}
+  poolSize: 40
   logPopups: 0
 --- !u!1 &1237177615
 GameObject:
@@ -1264,6 +1266,7 @@ MonoBehaviour:
   riseSpeed: 1.2
   lifetime: 3
   spawnOffset: {x: 0, y: 2.5, z: 0}
+  poolSize: 20
 --- !u!114 &1329763533
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1888,6 +1891,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   battleRadius: 0.75
   retreatRadiusMultiplier: 1.35
+  scanIntervalSeconds: 0.4
   logScanDiagnostics: 1
   diagnosticRadius: 3
   battleTickSeconds: 1
