@@ -56,6 +56,19 @@ MonoBehaviour:
   cityCollider: {fileID: 0}
   otagSprite: {fileID: 1039272974762551473, guid: bcab602ef49a5db458b75c4500301e67, type: 3}
   starSprite: {fileID: 4815476061570213978, guid: 752d26a04a491e341ae938c44a1ec5bd, type: 3}
+  byzantineNationId: 1
+  byzantineDefaultSprite: {fileID: -6658597953097588830, guid: 267cfa752aae2f843bc46dbf22cbd9f8, type: 3}
+  byzantineFortressSprite: {fileID: -437328523645134887, guid: a7231f41a5dd3bc47a1404c119310a74, type: 3}
+  byzantineCityScale: 0.045
+  byzantineBarracksSprite: {fileID: 1195717619031850817, guid: 474fdbeea9f341445bb974202aeebbf7, type: 3}
+  byzantineFarmSprite: {fileID: 2735696412935579361, guid: 60b15026c2ef6404d9f32520a9298b9e, type: 3}
+  byzantineHousingSprite: {fileID: -7111785599242557870, guid: 87145358bb6609d4c97e230db8a5f08a, type: 3}
+  byzantineTradeSprite: {fileID: 3265256182889667942, guid: f3f7f941f328e854590463445f623329, type: 3}
+  byzantineBuildingScale: 0.025
+  byzantineBarracksOffset: {x: -0.95, y: 0.65}
+  byzantineFarmOffset: {x: 0.95, y: 0.65}
+  byzantineHousingOffset: {x: -0.95, y: -0.65}
+  byzantineTradeOffset: {x: 0.95, y: -0.65}
   detectionRadius: 0.3
   enableDebugLogs: 1
   barrackIcon: {fileID: 8885133466620374142}

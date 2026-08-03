@@ -2,43 +2,43 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    [Header("Harita Prefab'ı")]
+    [Header("Map Prefab")]
     public GameObject completeMapPrefab;
     public NationController nationController;
 
     [Header("GUI Prefab")]
     public GameObject topLeftGUIPrefab;
     public GameObject interactionButtonPrefab;
+
     [Header("Horse Prefab")]
     public GameObject horsePrefab;
-    
-    [Header("Ayarlar")]
+
+    [Header("Settings")]
     public bool loadMapOnStart = true;
 
-    [Header("Kamera")]
+    [Header("Camera")]
     public CameraController cameraController;
-    
+
     [Header("Capital Settings")]
     public string capitalProvinceObjectName = "Province_104";
-    
+
     private GameObject currentMap;
     private GameObject horse;
     private GameObject currentGUI;
     private GameObject interactionGUI;
     private Transform capitalTransform;
 
-    void OnEnable()
+    private void OnEnable()
     {
-        // Subscribe to PlayerNationReady to set capital at the right time
         GameEvents.OnPlayerNationReady += OnPlayerNationReady;
     }
 
-    void OnDisable()
+    private void OnDisable()
     {
         GameEvents.OnPlayerNationReady -= OnPlayerNationReady;
     }
 
-    void Start()
+    private void Start()
     {
         if (loadMapOnStart)
         {
@@ -48,58 +48,43 @@ public class GameManager : MonoBehaviour
 
     public void LoadMap()
     {
-        // Load the map prefab
         if (completeMapPrefab != null)
         {
             currentMap = Instantiate(completeMapPrefab);
         }
-        // Load player GUI
+        else
+        {
+            GameLog.Error(GameLogCategory.Core, "[GameManager] Complete map prefab is not assigned.");
+            return;
+        }
+
         if (topLeftGUIPrefab != null)
         {
             currentGUI = Instantiate(topLeftGUIPrefab);
-
         }
-        
-        // Resolve the capital once - reused by SetPlayerCapital later
-        if (currentMap != null)
+
+        capitalTransform = currentMap.transform.Find(capitalProvinceObjectName);
+        if (capitalTransform == null)
         {
-            capitalTransform = currentMap.transform.Find(capitalProvinceObjectName);
-            if (capitalTransform == null)
-            {
-                GameLog.Error(GameLogCategory.Core, $"[GameManager] Capital province '{capitalProvinceObjectName}' not found in map prefab!");
-            }
+            GameLog.Error(GameLogCategory.Core, $"[GameManager] Fallback capital province '{capitalProvinceObjectName}' was not found in the map prefab.");
         }
 
-        // Spawn horse AFTER map
         if (horsePrefab == null)
         {
-            GameLog.Error(GameLogCategory.Core, "[GameManager] horsePrefab not assigned!");
+            GameLog.Error(GameLogCategory.Core, "[GameManager] Horse prefab is not assigned.");
         }
         else if (capitalTransform != null)
         {
-            // Use world position, not local
-            Vector3 horseStartPosition = capitalTransform.position;
+            horse = Instantiate(horsePrefab, capitalTransform.position, Quaternion.identity);
 
-            // Spawn with identity rotation, NOT as child of map
-            horse = Instantiate(horsePrefab, horseStartPosition, Quaternion.identity);
-
-            // camera location setting
             if (cameraController != null)
             {
                 cameraController.SetCameraPosition(horse.transform.position);
-            }
-            else
-            {
-                GameLog.Warning(GameLogCategory.Core, "[GameManager] cameraController not assigned - skipping camera setup");
             }
 
             if (interactionButtonPrefab != null)
             {
                 interactionGUI = Instantiate(interactionButtonPrefab);
-            }
-            else
-            {
-                GameLog.Warning(GameLogCategory.Core, "[GameManager] interactionButtonPrefab not assigned!");
             }
         }
 
@@ -118,13 +103,16 @@ public class GameManager : MonoBehaviour
 
     private void SetPlayerCapital()
     {
-        if (currentMap == null)
+        if (currentMap == null || PlayerNation.Instance == null || PlayerNation.Instance.currentNation == null)
         {
             return;
         }
 
-        if (PlayerNation.Instance == null || PlayerNation.Instance.currentNation == null)
+        NationModel playerNation = PlayerNation.Instance.currentNation;
+        ProvinceModel prefabCapital = playerNation.capitalProvince;
+        if (prefabCapital != null)
         {
+            MovePlayerToCapital(prefabCapital);
             return;
         }
 
@@ -133,21 +121,35 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        ProvinceModel capitalProvince = capitalTransform.GetComponent<ProvinceModel>();
-        if (capitalProvince == null)
+        ProvinceModel fallbackCapital = capitalTransform.GetComponent<ProvinceModel>();
+        if (fallbackCapital == null)
         {
-            GameLog.Error(GameLogCategory.Core, $"[GameManager] '{capitalProvinceObjectName}' has no ProvinceModel component!");
+            GameLog.Error(GameLogCategory.Core, $"[GameManager] '{capitalProvinceObjectName}' has no ProvinceModel component.");
             return;
         }
 
         if (nationController == null)
         {
-            GameLog.Error(GameLogCategory.Core, "[GameManager] nationController not assigned - cannot set player capital!");
+            GameLog.Error(GameLogCategory.Core, "[GameManager] NationController is not assigned; cannot set fallback player capital.");
             return;
         }
 
-        // Now PlayerNation.currentNation is guaranteed to be set
-        nationController.SetNationCapital(PlayerNation.Instance.currentNation, capitalProvince);
+        nationController.SetNationCapital(playerNation, fallbackCapital);
+        MovePlayerToCapital(fallbackCapital);
+    }
 
+    private void MovePlayerToCapital(ProvinceModel capitalProvince)
+    {
+        if (capitalProvince == null) return;
+
+        if (horse != null)
+        {
+            horse.transform.position = capitalProvince.transform.position;
+        }
+
+        if (cameraController != null)
+        {
+            cameraController.SetCameraPosition(capitalProvince.transform.position);
+        }
     }
 }

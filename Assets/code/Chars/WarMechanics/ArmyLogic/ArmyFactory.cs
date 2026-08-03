@@ -1,60 +1,54 @@
 using UnityEngine;
 
-
 public class ArmyFactory : MonoBehaviour
 {
     [Header("Prefab")]
     [SerializeField] private GameObject armyPrefab;
-    
+    [SerializeField] private Transform soldiersContainer;
+
     [Header("Default Values")]
     [SerializeField] private float defaultSize = 100f;
     [SerializeField] private float defaultQuality = 1.0f;
-    
+
     public static ArmyFactory Instance { get; private set; }
-    
+
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
     }
-    
+
     public Army CreateArmy(Vector3 position, ArmyData data)
     {
-        if (armyPrefab == null)
+        return CreateArmy(armyPrefab, position, data);
+    }
+
+    public Army CreateArmy(GameObject prefab, Vector3 position, ArmyData data)
+    {
+        if (prefab == null)
         {
             GameLog.Error(GameLogCategory.Core, "[ArmyFactory] Army prefab not assigned!");
             return null;
         }
-        
-        GameObject armyObj = Instantiate(armyPrefab, position, Quaternion.identity);
+
+        GameObject armyObj = Instantiate(prefab, position, Quaternion.identity, GetSoldiersContainer());
         Army army = armyObj.GetComponent<Army>();
-        
         if (army == null)
         {
             GameLog.Error(GameLogCategory.Core, "[ArmyFactory] Prefab missing Army component!");
             Destroy(armyObj);
             return null;
         }
-        
+
         army.Initialize(data);
         EnsureFlagVisuals(armyObj);
-        
         return army;
     }
-    
 
     public Army CreateArmy(Vector3 position, float size, float quality, bool isPlayer)
     {
-        ArmyData data = new ArmyData(size, quality, isPlayer);
-        return CreateArmy(position, data);
+        return CreateArmy(position, new ArmyData(size, quality, isPlayer));
     }
-    
 
     public Army CreateArmyForGeneral(General general, ArmyData data)
     {
@@ -63,51 +57,43 @@ public class ArmyFactory : MonoBehaviour
             GameLog.Error(GameLogCategory.Core, "[ArmyFactory] Cannot create army - no general!");
             return null;
         }
-        
-        // Spawn behind the general
-        Vector3 spawnPos = general.transform.position + new Vector3(-0.3f, -0.2f, 0);
-        
-        Army army = CreateArmy(spawnPos, data);
-        
+
+        Army army = CreateArmy(general.transform.position + new Vector3(-0.3f, -0.2f, 0), data);
         if (army != null)
         {
             general.AssignArmy(army);
-            
-            // Snap follower to position
             ArmyFollower follower = army.GetComponent<ArmyFollower>();
-            if (follower != null)
-            {
-                follower.SnapToTarget();
-            }
+            if (follower != null) follower.SnapToTarget();
         }
-        
+
         return army;
     }
-    
 
     public Army CreateArmyForGeneral(General general, float size, float quality, bool isPlayer)
     {
-        ArmyData data = new ArmyData(size, quality, isPlayer);
-        return CreateArmyForGeneral(general, data);
+        return CreateArmyForGeneral(general, new ArmyData(size, quality, isPlayer));
     }
-    
 
     public Army CreateDefaultArmyForGeneral(General general, bool isPlayer)
     {
         return CreateArmyForGeneral(general, defaultSize, defaultQuality, isPlayer);
     }
-    
-    // Setters for prefab (useful for runtime assignment)
-    public void SetArmyPrefab(GameObject prefab)
+
+    public void SetArmyPrefab(GameObject prefab) => armyPrefab = prefab;
+
+    private Transform GetSoldiersContainer()
     {
-        armyPrefab = prefab;
+        if (soldiersContainer != null) return soldiersContainer;
+
+        GameObject container = GameObject.Find("Soldiers");
+        if (container == null) container = new GameObject("Soldiers");
+        soldiersContainer = container.transform;
+        return soldiersContainer;
     }
 
     private void EnsureFlagVisuals(GameObject armyObject)
     {
-        if (armyObject == null) return;
-        if (armyObject.GetComponent<ArmyFlagVisuals>() != null) return;
-
+        if (armyObject == null || armyObject.GetComponent<ArmyFlagVisuals>() != null) return;
         armyObject.AddComponent<ArmyFlagVisuals>();
     }
 }

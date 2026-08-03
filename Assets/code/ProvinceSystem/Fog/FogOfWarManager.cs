@@ -14,7 +14,7 @@ public class FogOfWarManager : MonoBehaviour
     [Range(0f, 0.3f)]
     public float borderPeekBrightness = 0.15f; // How much lighter than full fog
 
-    private Dictionary<ProvinceModel, FogState> provinceFogStates = new Dictionary<ProvinceModel, FogState>();
+private Dictionary<ProvinceModel, FogState> provinceFogStates = new Dictionary<ProvinceModel, FogState>();
     private HashSet<ProvinceModel> discoveredProvinces = new HashSet<ProvinceModel>();
     private HashSet<ProvinceModel> activeLerpProvinces = new HashSet<ProvinceModel>();
     private List<ProvinceModel> settledProvinces = new List<ProvinceModel>();
@@ -38,14 +38,14 @@ public class FogOfWarManager : MonoBehaviour
     {
         GameEvents.OnProvincesAssigned += OnProvincesAssigned;
         GameEvents.OnProvinceEnter += OnProvinceEnter;
-        GameEvents.OnProvinceOwnerChanged += OnProvinceOwnerChanged;
+
     }
 
     private void OnDisable()
     {
         GameEvents.OnProvincesAssigned -= OnProvincesAssigned;
         GameEvents.OnProvinceEnter -= OnProvinceEnter;
-        GameEvents.OnProvinceOwnerChanged -= OnProvinceOwnerChanged;
+
     }
 
     private void OnDestroy()
@@ -86,7 +86,7 @@ public class FogOfWarManager : MonoBehaviour
             if (province.spriteRenderer == null) continue;
             
             // Store original target color
-            Color nationColor = GetNationColor(province);
+            Color nationColor = province.spriteRenderer.color;
             
             // Check if province is owned by player - auto-discover it
             bool isPlayerOwned = (playerNationModel != null && province.provinceOwner == playerNationModel);
@@ -130,15 +130,6 @@ public class FogOfWarManager : MonoBehaviour
 
     }
 
-    private Color GetNationColor(ProvinceModel province)
-    {
-        if (province.provinceOwner != null && !string.IsNullOrEmpty(province.provinceOwner.nationColor))
-        {
-            return NationLoader.HexToColor(province.provinceOwner.nationColor);
-        }
-        return province.provinceColor;
-    }
-
     private void OnProvinceEnter(ProvinceModel province)
     {
         if (province == null) return;
@@ -162,31 +153,6 @@ public class FogOfWarManager : MonoBehaviour
         UpdateAdjacentProvinces();
     }
     
-    /// <summary>
-    /// When a province changes owner, update our stored target color to the new nation's color.
-    /// This prevents the fog system from lerping back to the old owner's color.
-    /// </summary>
-    private void OnProvinceOwnerChanged(ProvinceModel province, NationModel oldOwner, NationModel newOwner)
-    {
-        if (province == null) return;
-        
-        if (provinceFogStates.TryGetValue(province, out FogState state))
-        {
-            // Update target color to new owner's color
-            Color newNationColor = GetNationColor(province);
-            state.targetColor = newNationColor;
-            activeLerpProvinces.Add(province);
-            
-            // Also immediately apply the color if province is revealed
-            if (state.isRevealing && province.spriteRenderer != null)
-            {
-                province.spriteRenderer.color = newNationColor;
-            }
-            
-            GameLog.Log(GameLogCategory.Core, $"[FogOfWarManager] Updated target color for {province.provinceName} to new owner's color");
-        }
-    }
-
     private void UpdateAdjacentProvinces()
     {
         foreach (var kvp in provinceFogStates)
@@ -292,6 +258,30 @@ public class FogOfWarManager : MonoBehaviour
             && Mathf.Abs(a.a - b.a) < ColorEpsilon;
     }
 
+    public void SetProvinceBaseColor(ProvinceModel province, Color baseColor)
+    {
+        if (province == null || province.spriteRenderer == null) return;
+
+        if (!IsFogActive || !provinceFogStates.TryGetValue(province, out FogState state))
+        {
+            province.spriteRenderer.color = baseColor;
+            return;
+        }
+
+        state.targetColor = baseColor;
+        if (state.isRevealing || state.isBorderPeek)
+            activeLerpProvinces.Add(province);
+    }
+
+    public Color GetVisibleBaseColor(ProvinceModel province)
+    {
+        if (province == null) return Color.gray;
+        if (!IsFogActive) return province.spriteRenderer != null ? province.spriteRenderer.color : province.provinceColor;
+        if (!provinceFogStates.TryGetValue(province, out FogState state)) return fogColor;
+        if (state.isRevealing) return state.targetColor;
+        if (state.isBorderPeek) return Color.Lerp(fogColor, state.targetColor, borderPeekBrightness);
+        return fogColor;
+    }
     public bool IsDiscovered(ProvinceModel province)
     {
         if (!IsFogActive) return true;

@@ -19,12 +19,13 @@ public class PlayerNationGUI : MonoBehaviour
     public TextMeshProUGUI cityCountText;   // Number of cities
     public TextMeshProUGUI turnCountText;   // Current turn
     public TextMeshProUGUI lootText;        // Khan's carried loot
+    public TextMeshProUGUI charismaText;
     
     [Header("Display Settings")]
     public bool showPendingIncome = true;   // Show "+X" next to current values
     public Color pendingIncomeColor = new Color(0.4f, 0.9f, 0.4f); // Green for positive
     public Color pendingLossColor = new Color(0.9f, 0.4f, 0.4f);   // Red for negative
-    
+
     [Header("References")]
     public PlayerNation playerNation;
     
@@ -42,6 +43,7 @@ public class PlayerNationGUI : MonoBehaviour
         GameEvents.OnBuildingConstructed += OnBuildingConstructed;
         GameEvents.OnProvinceOwnerChanged += OnProvinceOwnerChanged;
         GameEvents.OnProvinceRaided += OnProvinceRaided;
+        CharismaSystem.OnCharismaChanged += OnCharismaChanged;
     }
 
     private void OnDisable()
@@ -53,11 +55,13 @@ public class PlayerNationGUI : MonoBehaviour
         GameEvents.OnBuildingConstructed -= OnBuildingConstructed;
         GameEvents.OnProvinceOwnerChanged -= OnProvinceOwnerChanged;
         GameEvents.OnProvinceRaided -= OnProvinceRaided;
+        CharismaSystem.OnCharismaChanged -= OnCharismaChanged;
     }
 
     private void Start()
     {
         FindTextReferences();
+        UpdateCharismaDisplay();
     }
 
     private void OnPlayerNationReady()
@@ -149,6 +153,9 @@ public class PlayerNationGUI : MonoBehaviour
         
         if (lootText == null)
             lootText = FindTextByName("LootText");
+
+        if (charismaText == null)
+            charismaText = FindTextByName("CharismaText");
     }
 
     private TextMeshProUGUI FindTextByName(string name)
@@ -246,8 +253,21 @@ public class PlayerNationGUI : MonoBehaviour
         
         // Loot display
         UpdateLootDisplay();
+        UpdateCharismaDisplay();
     }
     
+    private void OnCharismaChanged(float value)
+    {
+        UpdateCharismaDisplay();
+    }
+
+    private void UpdateCharismaDisplay()
+    {
+        if (charismaText == null) return;
+        CharismaSystem charisma = playerNation != null ? playerNation.GetComponent<CharismaSystem>() : FindFirstObjectByType<CharismaSystem>();
+        charismaText.text = charisma != null ? FormatNumber(charisma.Current) : "0";
+    }
+
     /// <summary>
     /// Update the loot display text with Khan/selected general's carried loot.
     /// </summary>

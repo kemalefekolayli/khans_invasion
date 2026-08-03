@@ -578,6 +578,10 @@ MonoBehaviour:
   zoomSpeed: 20
   minZoom: 3
   maxZoom: 30
+  minWorldX: -100
+  maxWorldX: 110
+  minWorldY: -80
+  maxWorldY: 60
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0
@@ -791,6 +795,57 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 6957544645146881811, guid: 6c743fe1e1b16ca4f83c61852b01ed1f, type: 3}
   m_PrefabInstance: {fileID: 7692852127523610863}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &902000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 902000002}
+  - component: {fileID: 902000003}
+  m_Layer: 0
+  m_Name: TribeSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &902000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 902000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &902000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 902000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5574025beba302479a8fc656f76c29d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  initialTribeCount: 5
+  spawnChancePerTurn: 0.2
+  maximumActiveTribes: 12
+  minimumPopulation: 40
+  maximumPopulation: 100
+  populationStandardDeviation: 14
+  tribePrefab: {fileID: 0}
 --- !u!1 &912678334 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7194375325117548423, guid: 6c743fe1e1b16ca4f83c61852b01ed1f, type: 3}
@@ -858,6 +913,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   armyPrefab: {fileID: 6578496805540574311, guid: bff045f72372d1141b192caee8a14676, type: 3}
+  soldiersContainer: {fileID: 0}
   defaultSize: 100
   defaultQuality: 1
 --- !u!114 &925712144
@@ -1208,6 +1264,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: de052106973948c6b45821ace49cd0a2, type: 2}
   - {fileID: 11400000, guid: 3288fa44343747b195c24aba0099a778, type: 2}
   - {fileID: 11400000, guid: d710516efc574a19bd517217ed2028f0, type: 2}
+  startingValueTargetMultiplier: 1.25
+  startingValueTargetMargin: 1
+  startingValuesSettleDelay: 0.3
 --- !u!4 &1319164321
 Transform:
   m_ObjectHideFlags: 0
@@ -1421,6 +1480,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1561447648}
   - component: {fileID: 1561447647}
+  - component: {fileID: 1561447649}
   m_Layer: 0
   m_Name: FoW
   m_TagString: Untagged
@@ -1435,7 +1495,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1561447646}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b22a0c1e43566d04fb4ec2a93338dd7f, type: 3}
   m_Name: 
@@ -1458,6 +1518,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1561447649
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1561447646}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4abbc056ea9f474d9c1f375f5c41558, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentMapMode: 0
 --- !u!1 &1572997169 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 288265630644455215, guid: 6c743fe1e1b16ca4f83c61852b01ed1f, type: 3}
@@ -1712,6 +1785,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c55540d7e0247cf48aa9b43f378cc84e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  populationWeight: 0.05
+  buildingCountWeight: 25
+  ownedNeighborWeight: 20
+  connectedRegionWeight: 5
 --- !u!1001 &2045859886
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1931,6 +2008,8 @@ GameObject:
   m_Component:
   - component: {fileID: 2137381397}
   - component: {fileID: 2137381396}
+  - component: {fileID: 2137381399}
+  - component: {fileID: 2137381398}
   m_Layer: 0
   m_Name: PlayerNation
   m_TagString: Untagged
@@ -1970,6 +2049,46 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2137381398
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2137381395}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e801c4320fbec248af735719d6c4eab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  contactDistance: 0.75
+  buttonSize: {x: 190, y: 34}
+--- !u!114 &2137381399
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2137381395}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94511f6f3805abd4dac7bab151642a2f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  charisma: 20
+  startingCharisma: 20
+  battleWinMin: 5
+  battleWinEven: 10
+  battleWinMax: 15
+  battleLossMin: 10
+  battleLossEven: 15
+  battleLossMax: 20
+  provinceCaptureMin: 1
+  provinceCaptureMax: 5
+  capitalCaptureBonus: 5
+  provinceLossMin: 2
+  provinceLossMax: 8
+  capturedGeneralLossPercent: 0.4
 --- !u!1001 &285361759615935371
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2531,3 +2650,4 @@ SceneRoots:
   - {fileID: 1463641613}
   - {fileID: 2080395034}
   - {fileID: 642291458}
+  - {fileID: 902000002}

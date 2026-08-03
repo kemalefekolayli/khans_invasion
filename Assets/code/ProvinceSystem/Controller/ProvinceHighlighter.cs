@@ -30,8 +30,11 @@ public class ProvinceHighlighter : MonoBehaviour
         
         highlightedProvince = province;
         
-        Color darkened = province.provinceColor * darkenAmount;
-        darkened.a = province.provinceColor.a;
+        Color baseColor = FogOfWarManager.Instance != null
+            ? FogOfWarManager.Instance.GetVisibleBaseColor(province)
+            : province.provinceColor;
+        Color darkened = baseColor * darkenAmount;
+        darkened.a = baseColor.a;
         province.spriteRenderer.color = darkened;
     }
 
@@ -39,7 +42,9 @@ public class ProvinceHighlighter : MonoBehaviour
     {
         if (province == null || province.spriteRenderer == null) return;
         
-        province.spriteRenderer.color = province.provinceColor;
+        province.spriteRenderer.color = FogOfWarManager.Instance != null
+            ? FogOfWarManager.Instance.GetVisibleBaseColor(province)
+            : province.provinceColor;
         
         if (highlightedProvince == province)
             highlightedProvince = null;

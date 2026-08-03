@@ -1,25 +1,20 @@
-using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
+using UnityEngine;
 
-/// <summary>
-/// Loads province economic data from province_data.json at game start.
-/// This runs AFTER ProvinceNationAssigner assigns nations to provinces.
-/// 
-/// SETUP: Add this component to the same GameObject as ProvinceNationAssigner.
-/// </summary>
+/// <summary>Loads persistent province economic data after ownership assignment.</summary>
 public class ProvinceDataLoader : MonoBehaviour
 {
     [Header("Settings")]
     public string dataFileName = "province_data.json";
-    
+
     [Header("Debug")]
     public bool logEachProvince = false;
-    private bool dataLoaded = false;
-    
+
+    private bool dataLoaded;
+
     private void OnEnable()
     {
-        // Load AFTER provinces are assigned to nations
         GameEvents.OnProvincesAssigned += LoadProvinceData;
     }
 
@@ -33,89 +28,59 @@ public class ProvinceDataLoader : MonoBehaviour
         Invoke(nameof(LoadProvinceData), 0.75f);
     }
 
-    /// <summary>
-    /// Called automatically after ProvincesAssigned event.
-    /// Loads province_data.json and applies values to all provinces.
-    /// </summary>
     private void LoadProvinceData()
     {
         if (dataLoaded) return;
 
         string path = Path.Combine(Application.streamingAssetsPath, dataFileName);
-
         if (!File.Exists(path))
         {
             dataLoaded = true;
             GameLog.Warning(GameLogCategory.Core, $"[ProvinceDataLoader] {dataFileName} not found at {path}");
-            GameLog.Warning(GameLogCategory.Core, "[ProvinceDataLoader] Use Tools > Province Data Editor to create it");
             GameEvents.ProvinceDataLoaded();
             return;
         }
 
-        // Read and parse JSON
-        string json = File.ReadAllText(path);
-        ProvinceDataWrapper wrapper = JsonUtility.FromJson<ProvinceDataWrapper>(json);
-
-        if (wrapper == null || wrapper.provinces == null)
+        ProvinceDataWrapper wrapper = JsonUtility.FromJson<ProvinceDataWrapper>(File.ReadAllText(path));
+        if (wrapper?.provinces == null)
         {
             dataLoaded = true;
-            GameLog.Error(GameLogCategory.Core, "[ProvinceDataLoader] Failed to parse JSON!");
+            GameLog.Error(GameLogCategory.Core, "[ProvinceDataLoader] Failed to parse province data.");
             GameEvents.ProvinceDataLoaded();
             return;
         }
 
-        // Build lookup: provinceId -> data
         Dictionary<int, ProvinceData> dataById = new Dictionary<int, ProvinceData>();
-        foreach (var data in wrapper.provinces)
+        foreach (ProvinceData data in wrapper.provinces)
         {
             dataById[data.provinceId] = data;
         }
 
-        // Find all provinces and apply data
-        ProvinceModel[] allProvinces = FindObjectsByType<ProvinceModel>(FindObjectsSortMode.None);
-        if (allProvinces.Length == 0) return;
-
-        dataLoaded = true;
-        int appliedCount = 0;
-
-        foreach (var province in allProvinces)
+        foreach (ProvinceModel province in FindObjectsByType<ProvinceModel>(FindObjectsSortMode.None))
         {
-            if (province.CompareTag("River")) continue;
-
-            int id = (int)province.provinceId;
-            
-            if (dataById.TryGetValue(id, out ProvinceData data))
+            if (province.CompareTag("River") || !dataById.TryGetValue((int)province.provinceId, out ProvinceData data))
             {
-                // Apply all values
-                if (!string.IsNullOrEmpty(data.provinceName) && !data.provinceName.StartsWith("Province_"))
-                {
-                    province.SetProvinceName(data.provinceName);
-                }
-                
-                province.provinceTaxIncome = data.taxIncome;
-                province.provinceTradePower = data.tradePower;
-                province.provinceCurrentPop = data.currentPop;
-                province.provinceMaxPop = data.maxPop;
-                province.availableLoot = data.availableLoot;
+                continue;
+            }
 
-                // Mark the owning nation's capital (data-driven; AI relies on nation.capitalProvince)
-                if (data.isCapital && province.provinceOwner != null)
-                {
-                    province.provinceOwner.capitalProvince = province;
-                }
+            if (!string.IsNullOrEmpty(data.provinceName) && !data.provinceName.StartsWith("Province_"))
+            {
+                province.SetProvinceName(data.provinceName);
+            }
 
-                appliedCount++;
+            province.provinceTaxIncome = data.taxIncome;
+            province.provinceTradePower = data.tradePower;
+            province.provinceCurrentPop = data.currentPop;
+            province.provinceMaxPop = data.maxPop;
+            province.availableLoot = data.availableLoot;
 
-                if (logEachProvince)
-                {
-                    GameLog.Log(GameLogCategory.Core, $"[Loader] {province.provinceName}: Tax={data.taxIncome}, Trade={data.tradePower}, Pop={data.currentPop}");
-                }
+            if (logEachProvince)
+            {
+                GameLog.Log(GameLogCategory.Core, $"[Loader] {province.provinceName}: Tax={data.taxIncome}, Trade={data.tradePower}, Pop={data.currentPop}");
             }
         }
 
-
-        
-        // Signal that data is loaded - PlayerNation will recalculate
+        dataLoaded = true;
         GameEvents.ProvinceDataLoaded();
     }
 }

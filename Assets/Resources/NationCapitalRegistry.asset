@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b1378063aaa90c418945b39a63090dd, type: 3}
+  m_Name: NationCapitalRegistry
+  m_EditorClassIdentifier: 
+  assignments:
+  - nationId: 2
+    provinceId: 23
+  - nationId: 5
+    provinceId: 105
+  - nationId: 12
+    provinceId: 12
+  - nationId: 1
+    provinceId: 82
+  - nationId: 10
+    provinceId: 5
+  - nationId: 3
+    provinceId: 32
+  - nationId: 0
+    provinceId: 104
+  - nationId: 20
+    provinceId: 169
+  - nationId: 7
+    provinceId: 58
+  - nationId: 9
+    provinceId: 17
+  - nationId: 14
+    provinceId: 49
+  - nationId: 15
+    provinceId: 128
+  - nationId: 4
+    provinceId: 61
+  - nationId: 18
+    provinceId: 170
+  - nationId: 11
+    provinceId: 29
+  - nationId: 6
+    provinceId: 124
+  - nationId: 19
+    provinceId: 143
+  - nationId: 16
+    provinceId: 114
+  - nationId: 17
+    provinceId: 93

@@ -1,85 +1,68 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class ProvinceModel : MonoBehaviour
 {
-    // Province 7 is the river tile: tagged "River", excluded from province_data.json and nation assignment
     private const long RiverProvinceId = 7;
 
     public SpriteRenderer spriteRenderer;
-    
     public string provinceName;
     public long provinceId;
     public Color provinceColor;
-
     public float provinceTaxIncome;
     public float provinceTradePower;
     public float provinceCurrentPop;
     public float provinceMaxPop;
-    public float availableLoot; // we will make this recover after every turn 
-
-
-
+    public float availableLoot;
     public StateModel provinceState;
     public NationModel provinceOwner;
     public string provinceTag = "Province";
     public List<ProvinceModel> neighbors = new List<ProvinceModel>();
     public List<string> buildings = new List<string>();
 
-    void OnEnable()
+    private void OnEnable()
     {
         GameEvents.OnPlayerNationCapitalSet += SwitchSprites;
     }
 
-    void OnDisable()
+    private void OnDisable()
     {
         GameEvents.OnPlayerNationCapitalSet -= SwitchSprites;
     }
 
     public void SwitchSprites(ProvinceModel capitalProvince)
     {
-       CityCenter cityCenter = GetComponentInChildren<CityCenter>();
-         if (cityCenter != null && capitalProvince == this)
-         {
-            GameLog.Log(GameLogCategory.Core, $"[ProvinceModel] 1234 Switching sprites for capital province: {provinceName}");
-            cityCenter.SwitchSprites();
-         }
-    }
-    private void Awake()
-    {
-        // Tag ataması
-        if (!string.IsNullOrEmpty(provinceTag))
+        CityCenter cityCenter = GetComponentInChildren<CityCenter>();
+        if (cityCenter != null && capitalProvince == this)
         {
-            try
-            {   
-                if(provinceId == RiverProvinceId)
-                {
-                    gameObject.tag = "River";
-                }else
-                {
-                    gameObject.tag = provinceTag;
-                }
-                
-            }
-            catch
-            {
-                GameLog.Warning(GameLogCategory.Core, $"Tag '{provinceTag}' henüz tanımlı değil! Editör'den eklemen lazım.");
-            }
+            cityCenter.SwitchSprites();
         }
     }
-    void Start()
+
+    private void Awake()
+    {
+        if (string.IsNullOrEmpty(provinceTag)) return;
+
+        try
+        {
+            gameObject.tag = provinceId == RiverProvinceId ? "River" : provinceTag;
+        }
+        catch
+        {
+            GameLog.Warning(GameLogCategory.Core, $"Tag '{provinceTag}' is not defined yet. Add it in the editor.");
+        }
+    }
+
+    private void Start()
     {
         EnsureCollider();
-
     }
 
     public void EnsureCollider()
     {
         PolygonCollider2D collider = GetComponent<PolygonCollider2D>();
-
         if (collider == null && spriteRenderer != null && spriteRenderer.sprite != null)
         {
-            // Yeni collider ekle
             collider = gameObject.AddComponent<PolygonCollider2D>();
         }
 
@@ -89,10 +72,8 @@ public class ProvinceModel : MonoBehaviour
         }
     }
 
-    public Vector3 GetProvincePosition()
-    {
-        return transform.position;
-    }
+    public Vector3 GetProvincePosition() => transform.position;
+
     public void SetNationColor(Color nationColor)
     {
         provinceColor = nationColor;
@@ -107,7 +88,6 @@ public class ProvinceModel : MonoBehaviour
         if (string.IsNullOrEmpty(newName)) return;
 
         provinceName = newName;
-
         if (renameGameObject)
         {
             gameObject.name = newName;

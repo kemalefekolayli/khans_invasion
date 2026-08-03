@@ -11,6 +11,13 @@ public class CameraController : MonoBehaviour
     public float minZoom = 3f;
     public float maxZoom = 15f;
 
+    [Header("World Bounds")]
+    // These defaults match the visible extent of the current map background.
+    public float minWorldX = -32.5f;
+    public float maxWorldX = 43f;
+    public float minWorldY = -20.5f;
+    public float maxWorldY = 31.5f;
+
     private Camera cam;
     private Vector2 moveInput;
     private Vector2 mousePosition;
@@ -22,6 +29,7 @@ public class CameraController : MonoBehaviour
         cam = GetComponent<Camera>();
         cam.orthographic = true;
         cam.orthographicSize = 10f;
+        ClampCameraToWorldBounds();
     }
 
     void Update()
@@ -46,6 +54,7 @@ public class CameraController : MonoBehaviour
         moveInput.x += 1;
 
     transform.position += new Vector3(moveInput.x, moveInput.y, 0) * panSpeed * Time.deltaTime;
+    ClampCameraToWorldBounds();
 }
 
 
@@ -59,6 +68,7 @@ public class CameraController : MonoBehaviour
             float scroll = Mouse.current.scroll.ReadValue().y / 120f; // 120 = bir scroll birimi
             cam.orthographicSize -= scroll * zoomSpeed;
             cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, minZoom, maxZoom);
+            ClampCameraToWorldBounds();
         }
     }
 
@@ -94,6 +104,7 @@ public class CameraController : MonoBehaviour
             // Ekran koordinatlarını dünya koordinatlarına çevir
             Vector3 move = new Vector3(-delta.x, -delta.y, 0) * dragSpeed * cam.orthographicSize * 0.001f;
             transform.position += move;
+            ClampCameraToWorldBounds();
             
             lastMousePosition = mousePosition;
         }
@@ -113,6 +124,7 @@ public class CameraController : MonoBehaviour
         float scroll = context.ReadValue<Vector2>().y;
         cam.orthographicSize -= scroll * zoomSpeed * 0.01f;
         cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, minZoom, maxZoom);
+        ClampCameraToWorldBounds();
     }
 
     private bool IsPointerOverUI()
@@ -140,10 +152,40 @@ public class CameraController : MonoBehaviour
     public void SetCameraPosition(Vector2 position)
 {
     transform.position = new Vector3(position.x, position.y, transform.position.z);
+    ClampCameraToWorldBounds();
 }
 
 public void SetCameraPosition(Vector3 position)
 {
     transform.position = new Vector3(position.x, position.y, transform.position.z);
+    ClampCameraToWorldBounds();
 }
+
+    private void ClampCameraToWorldBounds()
+    {
+        if (cam == null)
+            return;
+
+        float halfViewportHeight = cam.orthographicSize;
+        float halfViewportWidth = halfViewportHeight * cam.aspect;
+
+        Vector3 cameraPosition = transform.position;
+        cameraPosition.x = ClampViewportAxis(cameraPosition.x, halfViewportWidth, minWorldX, maxWorldX);
+        cameraPosition.y = ClampViewportAxis(cameraPosition.y, halfViewportHeight, minWorldY, maxWorldY);
+
+        // Preserve the camera's existing depth when clamping its world position.
+        transform.position = cameraPosition;
+    }
+
+    private static float ClampViewportAxis(float position, float halfViewportSize, float minimum, float maximum)
+    {
+        float boundsCenter = (minimum + maximum) * 0.5f;
+        float boundsSize = maximum - minimum;
+
+        // A viewport wider than the bounds cannot fit, so keep it centered.
+        if (halfViewportSize * 2f >= boundsSize)
+            return boundsCenter;
+
+        return Mathf.Clamp(position, minimum + halfViewportSize, maximum - halfViewportSize);
+    }
 }
