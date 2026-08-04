@@ -16,6 +16,23 @@ public class AIManager : MonoBehaviour
     private bool initialized = false;
     private readonly AIWorldIntelCache worldIntelCache = new AIWorldIntelCache();
     private readonly List<AIRaidPressure> raidPressures = new List<AIRaidPressure>();
+    private int totalAIRaids;
+    private int totalAIConquests;
+    private float totalAIRaidLoot;
+
+    public readonly struct AIActivityMetrics
+    {
+        public readonly int RaidCount;
+        public readonly int ConquestCount;
+        public readonly float RaidLoot;
+
+        public AIActivityMetrics(int raidCount, int conquestCount, float raidLoot)
+        {
+            RaidCount = raidCount;
+            ConquestCount = conquestCount;
+            RaidLoot = raidLoot;
+        }
+    }
 
     private class AIRaidPressure
     {
@@ -94,10 +111,10 @@ public class AIManager : MonoBehaviour
             AINationController controller = new AINationController(nation, Settings);
             aiNations.Add(controller);
 
-            // Initialize with a starting army (100 troops)
+            // Initialize a configurable starting army.
             if (nation.capitalProvince != null && ArmyFactory.Instance != null)
             {
-                Army startingArmy = ArmyFactory.Instance.CreateArmy(nation.capitalProvince.transform.position, 100f, 1.0f, false);
+                Army startingArmy = ArmyFactory.Instance.CreateArmy(nation.capitalProvince.transform.position, Settings != null ? Settings.AIStartingArmySize : 140f, 1.0f, false);
                 if (startingArmy != null)
                 {
                     startingArmy.OwnerNation = nation;
@@ -109,7 +126,7 @@ public class AIManager : MonoBehaviour
             {
                  // Fallback if no capital
                  var randomProv = nation.provinceList[0];
-                 Army startingArmy = ArmyFactory.Instance.CreateArmy(randomProv.transform.position, 100f, 1.0f, false);
+                 Army startingArmy = ArmyFactory.Instance.CreateArmy(randomProv.transform.position, Settings != null ? Settings.AIStartingArmySize : 140f, 1.0f, false);
                  if (startingArmy != null)
                  {
                      startingArmy.OwnerNation = nation;
@@ -194,6 +211,10 @@ public class AIManager : MonoBehaviour
     private void OnProvinceConquered(ProvinceModel province, NationModel oldOwner, NationModel newOwner)
     {
         worldIntelCache.MarkBordersDirty();
+        if (newOwner != null && !newOwner.isPlayer)
+        {
+            totalAIConquests++;
+        }
     }
 
     private void OnArmySpawned(Army army, General general)
@@ -232,8 +253,15 @@ public class AIManager : MonoBehaviour
         pressure.raidCount++;
         pressure.lastRaidTurn = turnNumber;
         pressure.totalLootTaken += lootTaken;
+        totalAIRaids++;
+        totalAIRaidLoot += lootTaken;
 
         GameLog.Log(GameLogCategory.AIWar, $"[AIWar] Raid pressure {raider.nationName}->{defender.nationName}: {pressure.raidCount} raids, {pressure.totalLootTaken:F0} loot.");
+    }
+
+    public AIActivityMetrics GetActivityMetrics()
+    {
+        return new AIActivityMetrics(totalAIRaids, totalAIConquests, totalAIRaidLoot);
     }
 
     public bool ShouldEscalateToConquest(NationModel raider, NationModel defender, AIWarContext context)

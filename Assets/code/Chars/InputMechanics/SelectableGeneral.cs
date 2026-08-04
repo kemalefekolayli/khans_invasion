@@ -197,20 +197,24 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
         if (_controlLocked) return;
         EnsureGeneralReference();
         if (_general != null && _general.IsRegrouping) return;
+        if (!_isSelected || _moveDirection.sqrMagnitude < 0.0001f) return;
 
-        // ONLY move if selected
-        if (!_isSelected) return;
-        
-        if (_moveDirection.sqrMagnitude < 0.0001f) return;
-        
         Vector2 targetPos = rb.position + _moveDirection * moveSpeed * Time.fixedDeltaTime;
-        
-        if (!IsPositionBlocked(targetPos))
+        ProvinceModel targetProvince = ResolveTopProvince(targetPos, false);
+        if (targetProvince != null && targetProvince != _currentProvince)
         {
-            rb.MovePosition(targetPos);
+            Army army = _general != null ? _general.CommandedArmy : null;
+            SupplyMovementCoordinator supply = SupplyMovementCoordinator.Instance;
+            if (supply != null && !supply.CanEnterProvince(army, _currentProvince, targetProvince, out string reason))
+            {
+                CenterWarningPopupSpawner.Show(reason);
+                return;
+            }
         }
+
+        if (!IsPositionBlocked(targetPos))
+            rb.MovePosition(targetPos);
     }
-    
     #endregion
     
     #region Input Handling
@@ -364,25 +368,7 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
     
     private void CheckCurrentProvince()
     {
-        int hitCount = Physics2D.OverlapPoint(transform.position, _overlapFilter, _overlapResults);
-        
-        _currentProvinces.Clear();
-        ProvinceModel topProvince = null;
-        
-        for (int i = 0; i < hitCount; i++)
-        {
-            Collider2D hit = _overlapResults[i];
-            if (hit.CompareTag("Province"))
-            {
-                ProvinceModel province = hit.GetComponent<ProvinceModel>();
-                if (province != null)
-                {
-                    _currentProvinces.Add(province);
-                    if (topProvince == null)
-                        topProvince = province;
-                }
-            }
-        }
+        ProvinceModel topProvince = ResolveTopProvince(transform.position, true);
         
         if (_currentProvince != topProvince)
         {
@@ -397,6 +383,26 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
         }
     }
     
+    private ProvinceModel ResolveTopProvince(Vector2 position, bool collectProvinces)
+    {
+        int hitCount = Physics2D.OverlapPoint(position, _overlapFilter, _overlapResults);
+        if (collectProvinces)
+            _currentProvinces.Clear();
+
+        ProvinceModel topProvince = null;
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider2D hit = _overlapResults[i];
+            if (!hit.CompareTag("Province")) continue;
+
+            ProvinceModel province = hit.GetComponent<ProvinceModel>();
+            if (province == null) continue;
+            if (collectProvinces) _currentProvinces.Add(province);
+            if (topProvince == null) topProvince = province;
+        }
+
+        return topProvince;
+    }
     private void CheckCityCenter()
     {
         int hitCount = Physics2D.OverlapPoint(transform.position, _overlapFilter, _overlapResults);

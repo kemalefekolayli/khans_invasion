@@ -109,7 +109,7 @@ public class AINationController
             case AIState.Idle:
                 TargetNation = null; // Clear target in peace
                 // Just save money
-                string msg = $"Turn {turnNumber}: Idle — saving gold ({EconomyData.gold:F0}g)";
+                string msg = $"Turn {turnNumber}: Idle â€” saving gold ({EconomyData.gold:F0}g)";
                 LastActionDescription = msg;
                 GameLog.Log(GameLogCategory.AI, $"[AI: {Nation.nationName}] {msg}");
                 break;
@@ -164,9 +164,10 @@ public class AINationController
     private void BuildRoutine(int turnNumber, string actionName, System.Func<ProvinceModel, string, float> scoreFunc)
     {
         int buildingsBuilt = 0;
-        int maxBuilds = 5; // Cap per turn
+        int maxBuilds = settings != null ? Mathf.Max(0, settings.MaxBuildingsPerNationPerTurn) : 2;
+        float developmentReserve = settings != null ? Mathf.Max(0f, settings.DevelopmentGoldReserve) : 80f;
         
-        while (EconomyData.gold > 50 && buildingsBuilt < maxBuilds)
+        while (EconomyData.gold > developmentReserve && buildingsBuilt < maxBuilds)
         {
             var best = EvaluateBuildingOptions(scoreFunc);
             
@@ -180,7 +181,7 @@ public class AINationController
                 {
                     EconomyData.gold -= cost;
                     buildingsBuilt++;
-                    string msg = $"Turn {turnNumber}: {actionName} — Built {best.building} in {best.province.provinceName} (Score: {best.score:F1})";
+                    string msg = $"Turn {turnNumber}: {actionName} â€” Built {best.building} in {best.province.provinceName} (Score: {best.score:F1})";
                     LastActionDescription = msg;
                     GameLog.Log(GameLogCategory.Province, $"[AI: {Nation.nationName}] {msg}");
                     continue;
@@ -189,10 +190,10 @@ public class AINationController
             break;
         }
         
-        if (buildingsBuilt == 0 && EconomyData.gold > 200)
+        if (buildingsBuilt == 0 && EconomyData.gold > developmentReserve + 150f)
         {
              // Log only if we have gold but found nothing
-             //GameLog.Log(GameLogCategory.Core, $"[AI: {Nation.nationName}] {actionName} — nothing suitable to build.");
+             //GameLog.Log(GameLogCategory.Core, $"[AI: {Nation.nationName}] {actionName} â€” nothing suitable to build.");
         }
     }
 
@@ -303,7 +304,11 @@ public class AINationController
                  if (!HasBarracks(province) && province.provinceCurrentPop > 200)
                  {
                      bool noBarracks = !Nation.provinceList.Any(p => HasBarracks(p));
-                     if (noBarracks) score += 200f;
+                     if (noBarracks)
+                     {
+                         float noArmyMultiplier = settings != null ? settings.NoArmyBarracksMultiplier : 5f;
+                         score += 200f * noArmyMultiplier;
+                     }
                  }
                  break;
 
@@ -371,6 +376,9 @@ public class AINationController
         }
 
         Shuffle(recruitProvinces);
+        int activeArmyCount = ArmyManager.Instance != null
+            ? ArmyManager.Instance.GetAllArmies().Count(a => a != null && a.OwnerNation == Nation)
+            : 0;
 
         foreach (var prov in recruitProvinces)
         {
@@ -390,50 +398,53 @@ public class AINationController
 
             if (amount < 10) continue;
 
-            // Apply
+            if (ArmyManager.Instance == null || ArmyFactory.Instance == null) continue;
+
+            float maxArmy = settings != null ? settings.MaxArmySize : 1000f;
+            int maxArmies = settings != null ? Mathf.Max(1, settings.MaxArmiesPerNation) : 4;
+            var allOwnedArmies = ArmyManager.Instance.GetAllArmies()
+                .Where(a => a != null && a.OwnerNation == Nation)
+                .ToList();
+            var reinforceableArmies = allOwnedArmies
+                .Where(a => a.ArmySize < maxArmy)
+                .OrderBy(a => a.ArmySize)
+                .ToList();
+
+            Army receivingArmy = reinforceableArmies.FirstOrDefault();
+            bool createsNewArmy = receivingArmy == null && activeArmyCount < maxArmies;
+            if (receivingArmy == null && !createsNewArmy) continue;
+
+            if (receivingArmy != null)
+            {
+                amount = Mathf.Min(amount, maxArmy - receivingArmy.ArmySize);
+                cost = amount;
+            }
+
+            if (amount < 10f) continue;
+
             prov.provinceCurrentPop -= amount;
             EconomyData.gold -= cost;
             budget -= cost;
             recruitsCount += (int)amount;
 
-            // Assign to armies
-             if (ArmyManager.Instance != null && ArmyFactory.Instance != null)
+            if (receivingArmy != null)
             {
-                 bool assigned = false;
-                 // Try reinforce first
-                 // Find armies close to this province (approximate check)
-                 var localArmies = ArmyManager.Instance.GetAllArmies()
-                    .Where(a => a != null && a.OwnerNation == Nation && Vector3.Distance(a.transform.position, prov.transform.position) < 2.0f)
-                    .ToList();
-                 // Simplify: Just find ANY owned army nearby or create new
-                 // For now, let's create/reinforce logic similar to before
-                 
-                 float maxArmy = settings != null ? settings.MaxArmySize : 1000f;
-                 var ownedArmies = ArmyManager.Instance.GetAllArmies().Where(a => a.OwnerNation == Nation && a.ArmySize < maxArmy).ToList();
-
-                 if (ownedArmies.Count > 0)
-                 {
-                     // Reinforce random valid army
-                     var army = ownedArmies[UnityEngine.Random.Range(0, ownedArmies.Count)];
-                     army.AddSoldiers(amount);
-                     assigned = true;
-                 }
-
-                 if (!assigned)
-                 {
-                     Army newArmy = ArmyFactory.Instance.CreateArmy(prov.transform.position, amount, 1.0f, false);
-                     if (newArmy != null)
-                     {
-                         newArmy.OwnerNation = Nation;
-                         newArmy.CurrentProvince = prov;
-                     }
-                 }
+                receivingArmy.AddSoldiers(amount);
+            }
+            else
+            {
+                Army newArmy = ArmyFactory.Instance.CreateArmy(prov.transform.position, amount, 1.0f, false);
+                if (newArmy != null)
+                {
+                    newArmy.OwnerNation = Nation;
+                    newArmy.CurrentProvince = prov;
+                }
             }
         }
 
         if (recruitsCount > 0)
         {
-            string msg = $"Turn {turnNumber}: Recruiting — Raised {recruitsCount} troops across empire.";
+            string msg = $"Turn {turnNumber}: Recruiting â€” Raised {recruitsCount} troops across empire.";
             LastActionDescription = msg;
             GameLog.Log(GameLogCategory.AI, $"[AI: {Nation.nationName}] {msg}");
         }
@@ -681,7 +692,7 @@ public class AINationController
 
         if (TargetNation == null)
         {
-             LastActionDescription = $"Turn {turnNumber}: Attacking — No valid targets found. Peace?";
+             LastActionDescription = $"Turn {turnNumber}: Attacking â€” No valid targets found. Peace?";
              return;
         }
 
@@ -691,7 +702,7 @@ public class AINationController
         // For now, we simulate "planning" by logging and maybe moving troops if we had that API exposed.
         // We can also spawn "Invasion Forces" near the border if we have money.
         
-        string msg = $"Turn {turnNumber}: Attacking — Target: {TargetNation.nationName}. Marshalling forces.";
+        string msg = $"Turn {turnNumber}: Attacking â€” Target: {TargetNation.nationName}. Marshalling forces.";
         LastActionDescription = $"{msg} Advanced {movedArmies} armies.";
         GameLog.Log(GameLogCategory.AI, $"[AI: {Nation.nationName}] {LastActionDescription}");
         

@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
 
+public enum CityOperationType { Discovery, Raid, Siege, Battle }
+
 /// <summary>
 /// Central event system for game-wide communication.
 /// Components subscribe to events they care about and invoke events when state changes.
@@ -34,6 +36,7 @@ public static class GameEvents
     public static event Action<ProvinceModel> OnPlayerNationCapitalSet;
     public static event Action<CityCenter> OnCityCenterEnter;
     public static event Action<CityCenter> OnCityCenterExit;
+    public static event Action<NationModel, ProvinceModel, CityOperationType, General> OnCityOperation;
     
     // ===== PROVINCE INTERACTION EVENTS =====
     
@@ -154,6 +157,14 @@ public static class GameEvents
         OnCityCenterExit?.Invoke(cityCenter);
     }
     
+    public static void RecordCityOperation(NationModel nation, ProvinceModel province, CityOperationType operationType, General general = null)
+    {
+        if (nation == null || province == null) return;
+
+        GameLog.Log(GameLogCategory.Events, $"CITY OP nation={nation.nationName} city={province.provinceName} type={operationType}");
+        OnCityOperation?.Invoke(nation, province, operationType, general);
+    }
+
     // Province Interaction Events
     public static void ProvinceManagementOpened(ProvinceModel province)
     {

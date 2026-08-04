@@ -88,11 +88,21 @@ public class AISettings : ScriptableObject
     [Tooltip("Log aggression and war intent decisions.")]
     public bool LogWarIntent = true;
 
+    [Header("AI Tempo")]
+    [Tooltip("Starting army size created for each AI nation.")]
+    public float AIStartingArmySize = 140f;
+    [Tooltip("Maximum buildings an AI nation can construct during one turn.")]
+    public int MaxBuildingsPerNationPerTurn = 2;
+    [Tooltip("Gold AI keeps available before starting a development or fortification build loop.")]
+    public float DevelopmentGoldReserve = 80f;
+
     [Header("Recruitment")]
     [Tooltip("AI nations below this treasury are topped up when AI initializes.")]
     public float AIStartingTreasury = 300f;
     [Tooltip("Desired max troops per army before creating a new one.")]
     public float MaxArmySize = 1000f;
+    [Tooltip("Hard limit for active armies per AI nation. Recruitment reinforces existing armies before creating another.")]
+    public int MaxArmiesPerNation = 4;
     [Tooltip("Minimum gold to keep in reserve when recruiting.")]
     public float RecruitmentGoldReserve = 50f;
 

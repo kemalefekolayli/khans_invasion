@@ -33,6 +33,15 @@ public static class GameLog
         GameLogFileSink.Write(line);
     }
 
+    /// <summary>Writes an explicit diagnostic regardless of the selected log profile.</summary>
+    public static void Diagnostic(GameLogCategory category, object message, Object context = null)
+    {
+        string line = Format(category, message);
+        if (context != null) Debug.Log(line, context);
+        else Debug.Log(line);
+        GameLogFileSink.Write(line);
+    }
+
     public static void Warning(GameLogCategory category, object message, Object context = null)
     {
         if (!showWarnings || !IsEnabled(category)) return;

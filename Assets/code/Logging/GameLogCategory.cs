@@ -20,5 +20,6 @@ public enum GameLogCategory
     Quest = 1 << 13,
     Events = 1 << 14,
     Fog = 1 << 15,
+    Supply = 1 << 16,
     All = ~0
 }

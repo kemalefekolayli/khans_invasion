@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 using System.Text;
 using UnityEngine;
 
@@ -41,6 +42,12 @@ namespace Khans.Invasion.Testing
         // play-mode transitions, so the runner can set this before entering play.
         private static bool runRequested = false;
         private static SimulationMode requestedMode = SimulationMode.AIOnly;
+        private static int requestedTurns = 10;
+        private static float requestedTurnInterval = 2f;
+        private static float requestedTimeout = 120f;
+        private static int requestedSeed;
+        private static string requestedReportFileName = ReportFileName;
+        private const string ExternalRequestFileName = "mcp_simulation.request";
 
         public static bool LastResult { get; private set; } = true;
 
@@ -55,10 +62,21 @@ namespace Khans.Invasion.Testing
         private float runStartTime;
         private Coroutine turnLoop;
 
-        public static void RequestRun(SimulationMode mode)
+        public static void RequestRun(
+            SimulationMode mode,
+            int turns = 10,
+            float turnInterval = 2f,
+            float timeout = 120f,
+            int seed = 0,
+            string reportFileName = null)
         {
             runRequested = true;
             requestedMode = mode;
+            requestedTurns = Mathf.Max(1, turns);
+            requestedTurnInterval = Mathf.Max(0f, turnInterval);
+            requestedTimeout = Mathf.Max(requestedTurnInterval * requestedTurns + 10f, timeout);
+            requestedSeed = seed;
+            requestedReportFileName = string.IsNullOrWhiteSpace(reportFileName) ? ReportFileName : reportFileName;
         }
 
         public static void ResetRequest()
@@ -71,6 +89,7 @@ namespace Khans.Invasion.Testing
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void EnsureRuntimeInstance()
         {
+            TryConsumeExternalRequest();
             if (!runRequested) return;
             if (FindFirstObjectByType<SimulationController>() != null) return;
 
@@ -78,11 +97,41 @@ namespace Khans.Invasion.Testing
             go.AddComponent<SimulationController>();
         }
 
+        private static void TryConsumeExternalRequest()
+        {
+            if (runRequested) return;
+
+            string requestPath = Path.Combine(Directory.GetParent(Application.dataPath).FullName, ReportDirectoryName, ExternalRequestFileName);
+            if (!File.Exists(requestPath)) return;
+
+            try
+            {
+                string[] values = File.ReadAllText(requestPath).Trim().Split(',');
+                int turns = values.Length > 0 && int.TryParse(values[0], out int parsedTurns) ? parsedTurns : 50;
+                float interval = values.Length > 1 && float.TryParse(values[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float parsedInterval) ? parsedInterval : 0.1f;
+                float timeout = values.Length > 2 && float.TryParse(values[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float parsedTimeout) ? parsedTimeout : 90f;
+                int seed = values.Length > 3 && int.TryParse(values[3], out int parsedSeed) ? parsedSeed : 0;
+                string reportName = values.Length > 4 ? values[4].Trim() : ReportFileName;
+
+                RequestRun(SimulationMode.AIOnly, turns, interval, timeout, seed, reportName);
+                File.Delete(requestPath);
+            }
+            catch (Exception exception)
+            {
+                GameLog.Error(GameLogCategory.Core, $"[SimulationController] Failed to consume external request: {exception.Message}");
+            }
+        }
         private void Awake()
         {
-            if (runRequested)
+            if (!runRequested) return;
+
+            mode = requestedMode;
+            turnsToRun = requestedTurns;
+            turnIntervalSeconds = requestedTurnInterval;
+            timeoutSeconds = requestedTimeout;
+            if (requestedSeed != 0)
             {
-                mode = requestedMode;
+                UnityEngine.Random.InitState(requestedSeed);
             }
         }
 
@@ -150,7 +199,14 @@ namespace Khans.Invasion.Testing
 
             for (int i = 0; i < turnsToRun && !failing; i++)
             {
-                yield return new WaitForSecondsRealtime(turnIntervalSeconds);
+                if (turnIntervalSeconds > 0f)
+                {
+                    yield return new WaitForSecondsRealtime(turnIntervalSeconds);
+                }
+                else
+                {
+                    yield return null;
+                }
 
                 if (mode == SimulationMode.ScriptedPlayer)
                 {
@@ -257,9 +313,12 @@ namespace Khans.Invasion.Testing
             float gold = player != null ? player.nationMoney : 0f;
             float pop = GetPlayerPopulation();
             string armyCounts = GetArmyCountsPerNation();
+            AIManager.AIActivityMetrics aiActivity = AIManager.Instance != null
+                ? AIManager.Instance.GetActivityMetrics()
+                : new AIManager.AIActivityMetrics(0, 0, 0f);
 
-            snapshotText.AppendLine($"[Turn {turn}] Gold: {gold:F0} | Pop: {pop:F0} | Armies: {armyCounts}");
-            GameLog.Log(GameLogCategory.Core, $"[SimulationController] Turn {turn} snapshot - Gold: {gold:F0}, Pop: {pop:F0}, Armies: {armyCounts}");
+            snapshotText.AppendLine($"[Turn {turn}] Gold: {gold:F0} | Pop: {pop:F0} | Armies: {armyCounts} | AI raids: {aiActivity.RaidCount} | AI conquests: {aiActivity.ConquestCount} | AI raid loot: {aiActivity.RaidLoot:F0}");
+            GameLog.Log(GameLogCategory.Core, $"[SimulationController] Turn {turn} snapshot - Gold: {gold:F0}, Pop: {pop:F0}, Armies: {armyCounts}, AI raids: {aiActivity.RaidCount}, AI conquests: {aiActivity.ConquestCount}, AI raid loot: {aiActivity.RaidLoot:F0}");
         }
 
         private float GetPlayerPopulation()
@@ -419,8 +478,16 @@ namespace Khans.Invasion.Testing
             sb.AppendLine("KHAN'S INVASION - SIMULATION REPORT");
             sb.AppendLine($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             sb.AppendLine($"Mode: {mode}");
+            sb.AppendLine($"Seed: {requestedSeed}");
             sb.AppendLine($"Turns requested: {turnsToRun}");
             sb.AppendLine($"Turns advanced: {turnsAdvanced}");
+            if (AIManager.Instance != null)
+            {
+                AIManager.AIActivityMetrics aiActivity = AIManager.Instance.GetActivityMetrics();
+                sb.AppendLine($"AI raids: {aiActivity.RaidCount}");
+                sb.AppendLine($"AI conquests: {aiActivity.ConquestCount}");
+                sb.AppendLine($"AI raid loot: {aiActivity.RaidLoot:F0}");
+            }
             sb.AppendLine();
             sb.AppendLine("=== PER-TURN SNAPSHOTS ===");
             sb.AppendLine(snapshotText.ToString());
@@ -444,7 +511,7 @@ namespace Khans.Invasion.Testing
                 string projectRoot = Directory.GetParent(Application.dataPath).FullName;
                 string reportDirectory = Path.Combine(projectRoot, ReportDirectoryName);
                 Directory.CreateDirectory(reportDirectory);
-                string reportPath = Path.Combine(reportDirectory, ReportFileName);
+                string reportPath = Path.Combine(reportDirectory, requestedReportFileName);
                 File.WriteAllText(reportPath, sb.ToString(), Encoding.UTF8);
                 GameLog.Log(GameLogCategory.Core, $"[SimulationController] Report written to {reportPath}");
             }
