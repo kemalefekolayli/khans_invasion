@@ -9,6 +9,11 @@ public class SupplyMovementCoordinator : MonoBehaviour
     [Header("Army Supply")]
     [SerializeField, Min(1f)] private float maximumSupply = 100f;
     [SerializeField, Min(0f)] private float startingSupply = 100f;
+    [Header("Supply Capacity")]
+    [SerializeField, Min(1f)] private float capacitySizeReference = 100f;
+    [SerializeField, Min(0f)] private float capacityGrowth = 0.6f;
+    [SerializeField, Min(1f)] private float minimumSupplyCapacity = 1f;
+    [SerializeField, Min(0f)] private float tribeSupplyWeight = 0.5f;
     [Header("Diagnostics")]
     [SerializeField] private bool diagnosticsEnabled = true;
     [Header("Construction Cost")]
@@ -41,6 +46,8 @@ public class SupplyMovementCoordinator : MonoBehaviour
         GameEvents.OnCityOperation += OnCityOperation;
         GameEvents.OnArmySpawned += OnArmySpawned;
         GameEvents.OnArmyAssigned += OnArmyAssigned;
+        GameEvents.OnArmySizeChanged += OnArmySizeChanged;
+        GameEvents.OnTribeRecruited += OnTribeRecruited;
         GameEvents.OnTurnEnded += OnTurnEnded;
         GeneralSelectionManager.OnGeneralSelected += OnGeneralSelected;
     }
@@ -51,6 +58,8 @@ public class SupplyMovementCoordinator : MonoBehaviour
         GameEvents.OnCityOperation -= OnCityOperation;
         GameEvents.OnArmySpawned -= OnArmySpawned;
         GameEvents.OnArmyAssigned -= OnArmyAssigned;
+        GameEvents.OnArmySizeChanged -= OnArmySizeChanged;
+        GameEvents.OnTribeRecruited -= OnTribeRecruited;
         GameEvents.OnTurnEnded -= OnTurnEnded;
         GeneralSelectionManager.OnGeneralSelected -= OnGeneralSelected;
     }
@@ -69,6 +78,8 @@ public class SupplyMovementCoordinator : MonoBehaviour
     private void OnArmySpawned(Army army, General general) => PrepareArmy(army, general?.GetComponent<SelectableGeneral>()?.CurrentProvince);
     private void OnArmyAssigned(Army army, General general) => PrepareArmy(army, general?.GetComponent<SelectableGeneral>()?.CurrentProvince);
     private void OnGeneralSelected(SelectableGeneral selectable) => PrepareArmy(selectable?.GetComponent<General>()?.CommandedArmy, selectable?.CurrentProvince);
+    private void OnArmySizeChanged(Army army) => RefreshCapacity(army);
+    private void OnTribeRecruited(TribeGroup tribe, General recruiter) => RefreshCapacity(recruiter?.CommandedArmy);
 
     private void PrepareArmy(Army army, ProvinceModel observedProvince)
     {
@@ -79,8 +90,9 @@ public class SupplyMovementCoordinator : MonoBehaviour
         if (account == null)
         {
             account = army.gameObject.AddComponent<ArmySupplyAccount>();
-            account.Configure(maximumSupply, startingSupply);
+            account.Configure(CalculateSupplyCapacity(army), startingSupply);
         }
+        else RefreshCapacity(army);
 
         ProvinceModel origin = observedProvince ?? army.CurrentProvince ?? player.capitalProvince;
         SupplyRouteTracker.Instance?.SeedArmy(army, origin);
@@ -99,12 +111,13 @@ public class SupplyMovementCoordinator : MonoBehaviour
             return true;
 
         bool known = tracker.IsKnownCityReadOnly(nation, destination);
-        float required = costCalculator.Calculate(new SupplyMoveContext(army.ArmySize, destination.provinceOwner == nation, known));
-        if (account.Available + 0.001f >= required)
+        float required = costCalculator.Calculate(new SupplyMoveContext(GetEffectiveSupplySize(army), destination.provinceOwner == nation, known));
+        float available = account.Available + GetWalletAvailable(army);
+        if (available + 0.001f >= required)
             return true;
 
         reason = "Supply depleted. Return to the nearest resupply city.";
-        LogBlocked(army, from, destination, required, account.Available);
+        LogBlocked(army, from, destination, required, available);
         return false;
     }
     private void OnProvinceEnter(ProvinceModel destination)
@@ -145,11 +158,16 @@ public class SupplyMovementCoordinator : MonoBehaviour
         }
         else if (traversal == FreeTraversalResult.PendingPop)
         {
+            RefundPendingEdge(army, edge);
             Log($"SUP POP seq={sequence} army={army.name} edge={Name(source)}>{Name(destination)}", army);
         }
         else
         {
-            BuildEdge(sequence, nation, army, source, destination, tracker);
+            if (!BuildEdge(sequence, nation, army, source, destination, tracker))
+            {
+                selected.RestoreProvinceWithoutEvent(source);
+                return;
+            }
         }
 
         if (SupplyRouteTracker.IsCity(destination) && first)
@@ -159,22 +177,44 @@ public class SupplyMovementCoordinator : MonoBehaviour
         Log($"SUP ROUTE seq={sequence} city={Name(destination)} pending={Mathf.Max(0, route.PendingRoute.Count - 1)} active={route.ActiveEdges.Count}", army);
     }
 
-    private void BuildEdge(int sequence, NationModel nation, Army army, ProvinceModel source, ProvinceModel destination, SupplyRouteTracker tracker)
+    private bool BuildEdge(int sequence, NationModel nation, Army army, ProvinceModel source, ProvinceModel destination, SupplyRouteTracker tracker)
     {
         bool known = tracker.IsKnownCity(nation, destination);
-        SupplyMoveContext context = new(army.ArmySize, destination.provinceOwner == nation, known);
+        SupplyMoveContext context = new(GetEffectiveSupplySize(army), destination.provinceOwner == nation, known);
         float cost = costCalculator.Calculate(context);
         ArmySupplyAccount account = army.GetComponent<ArmySupplyAccount>();
-        if (account == null || !account.TryFund(cost))
+        General commander = army.CommandingGeneral;
+        float stockAvailable = account != null ? account.Available : 0f;
+        float walletAvailable = commander != null ? commander.CarriedLoot : 0f;
+        if (account == null || stockAvailable + walletAvailable + 0.001f < cost)
         {
-            float available = account != null ? account.Available : 0f;
+            float available = stockAvailable + walletAvailable;
             Log($"SUP LOW seq={sequence} army={army.name} edge={Name(source)}>{Name(destination)} need={cost:0.#} have={available:0.#}", army);
-            tracker.SynchronizePosition(army, destination);
-            return;
+            tracker.SynchronizePosition(army, source);
+            return false;
         }
 
-        tracker.RecordPaidTransition(army, destination, SupplyFundingType.Stock, out _);
-        Log($"SUP BUILD seq={sequence} army={army.name} edge={Name(source)}>{Name(destination)} cost={cost:0.#} stock={account.Available:0.#}", army);
+        float stockSpent = account.SpendUpTo(cost);
+        float walletSpent = commander != null ? commander.RemoveLoot(cost - stockSpent) : 0f;
+        SupplyFundingType funding = walletSpent > 0.001f ? SupplyFundingType.Cargo : SupplyFundingType.Stock;
+        tracker.RecordPaidTransition(army, destination, funding, stockSpent, walletSpent, out bool loopCollapsed, out List<RouteEdge> refundedEdges);
+        if (loopCollapsed)
+        {
+            foreach (RouteEdge refundedEdge in refundedEdges) RefundPendingEdge(army, refundedEdge);
+            Log($"SUP LOOP seq={sequence} army={army.name} refunds={refundedEdges.Count}", army);
+        }
+        Log($"SUP BUILD seq={sequence} army={army.name} edge={Name(source)}>{Name(destination)} cost={cost:0.#} stock={account.Available:0.#} wallet={(commander != null ? commander.CarriedLoot : 0f):0.#}", army);
+        return true;
+    }
+
+    private void RefundPendingEdge(Army army, RouteEdge edge)
+    {
+        if (army == null || edge == null || (edge.StockCost <= 0f && edge.CargoCost <= 0f)) return;
+        ArmySupplyAccount account = army.GetComponent<ArmySupplyAccount>();
+        General commander = army.CommandingGeneral;
+        if (account != null) account.Refund(edge.StockCost);
+        if (commander != null) commander.AddLoot(edge.CargoCost);
+        Log($"SUP REFUND army={army.name} stock={edge.StockCost:0.#} cargo={edge.CargoCost:0.#}", army);
     }
 
     private void OnCityOperation(NationModel nation, ProvinceModel province, CityOperationType operation, General actor)
@@ -239,6 +279,33 @@ public class SupplyMovementCoordinator : MonoBehaviour
     }
 
     private static bool IsPlayerArmy(Army army, NationModel nation) => army != null && nation != null && army.IsPlayerArmy && (army.OwnerNation == null || army.OwnerNation == nation);
+    private float CalculateSupplyCapacity(Army army)
+    {
+        float sizeRatio = Mathf.Max(0f, GetEffectiveSupplySize(army) / Mathf.Max(1f, capacitySizeReference));
+        return Mathf.Max(minimumSupplyCapacity, maximumSupply * (1f + capacityGrowth * (Mathf.Sqrt(sizeRatio) - 1f)));
+    }
+    private void RefreshCapacity(Army army)
+    {
+        if (army == null) return;
+        ArmySupplyAccount account = army.GetComponent<ArmySupplyAccount>();
+        if (account == null) return;
+        float capacity = CalculateSupplyCapacity(army);
+        if (capacity > account.MaximumSupply + 0.001f)
+            account.IncreaseMaximumPreservingFill(capacity);
+        else if (capacity < account.MaximumSupply - 0.001f)
+            account.SetMaximumKeepingCurrent(capacity);
+    }
+    private float GetEffectiveSupplySize(Army army)
+    {
+        if (army == null) return 0f;
+        General commander = army.CommandingGeneral;
+        float tribePopulation = 0f;
+        if (commander != null)
+            foreach (TribeGroup tribe in FindObjectsByType<TribeGroup>(FindObjectsSortMode.None))
+                if (tribe != null && tribe.RecruitingGeneral == commander) tribePopulation += tribe.Population;
+        return army.ArmySize + tribePopulation * tribeSupplyWeight;
+    }
+    private static float GetWalletAvailable(Army army) => army?.CommandingGeneral != null ? army.CommandingGeneral.CarriedLoot : 0f;
     private static string Name(ProvinceModel province) => province != null ? province.provinceName : "none";
 
     private void Log(string message, Object context)

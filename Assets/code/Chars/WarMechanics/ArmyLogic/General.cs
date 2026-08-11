@@ -143,6 +143,8 @@ public class General : MonoBehaviour
     {
         float actualAmount = Mathf.Min(amount, AvailableLootCapacity);
         carriedLoot += actualAmount;
+        if (actualAmount > 0f)
+            GameEvents.GeneralLootChanged(this);
         
         if (actualAmount < amount)
         {
@@ -160,6 +162,8 @@ public class General : MonoBehaviour
     {
         float actualAmount = Mathf.Min(amount, carriedLoot);
         carriedLoot -= actualAmount;
+        if (actualAmount > 0f)
+            GameEvents.GeneralLootChanged(this);
         return actualAmount;
     }
     
@@ -175,6 +179,7 @@ public class General : MonoBehaviour
             PlayerNation.Instance.nationMoney += carriedLoot;
             GameLog.Log(GameLogCategory.Core, $"[General] {data.generalName} deposited {carriedLoot:F0} loot to treasury");
             carriedLoot = 0f;
+            GameEvents.GeneralLootChanged(this);
             
             GameEvents.PlayerStatsChanged();
         }

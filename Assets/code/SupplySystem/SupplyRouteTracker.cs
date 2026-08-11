@@ -66,6 +66,7 @@ public class SupplyRouteTracker : MonoBehaviour
         if (state.CurrentProvince != null) return;
         state.CurrentProvince = province;
         state.PendingRoute.Add(province);
+        state.PendingEdges.Add(null);
     }
 
     public FreeTraversalResult TryRecordFreeTraversal(Army army, ProvinceModel destination, out RouteEdge edge)
@@ -84,8 +85,9 @@ public class SupplyRouteTracker : MonoBehaviour
         int last = state.PendingRoute.Count - 1;
         if (last > 0 && state.PendingRoute[last] == source && state.PendingRoute[last - 1] == destination)
         {
-            edge = new RouteEdge(source, destination, SupplyFundingType.Stock);
+            edge = state.PendingEdges[last] ?? new RouteEdge(source, destination, SupplyFundingType.Stock);
             state.PendingRoute.RemoveAt(last);
+            state.PendingEdges.RemoveAt(last);
             state.CurrentProvince = destination;
             return FreeTraversalResult.PendingPop;
         }
@@ -108,21 +110,26 @@ public class SupplyRouteTracker : MonoBehaviour
     {
         return nation != null && province != null && nationStates.TryGetValue(nation, out NationRouteState state) && state.KnownCities.Contains(province);
     }
-    public RouteEdge RecordPaidTransition(Army army, ProvinceModel destination, SupplyFundingType funding, out bool loopCollapsed)
+    public RouteEdge RecordPaidTransition(Army army, ProvinceModel destination, SupplyFundingType funding, float stockCost, float cargoCost, out bool loopCollapsed, out List<RouteEdge> refundedEdges)
     {
         loopCollapsed = false;
+        refundedEdges = new List<RouteEdge>();
         ArmyRouteState state = GetArmyState(army);
         if (state?.CurrentProvince == null || destination == null || state.CurrentProvince == destination) return null;
         ProvinceModel source = state.CurrentProvince;
         EnsurePendingEndsAt(state, source);
-        RouteEdge edge = new(source, destination, funding);
+        RouteEdge edge = new(source, destination, funding, stockCost, cargoCost);
         int earlierIndex = state.PendingRoute.IndexOf(destination);
         if (earlierIndex >= 0)
         {
+            for (int i = earlierIndex + 1; i < state.PendingEdges.Count; i++)
+                if (state.PendingEdges[i] != null) refundedEdges.Add(state.PendingEdges[i]);
+            refundedEdges.Add(edge);
             state.PendingRoute.RemoveRange(earlierIndex + 1, state.PendingRoute.Count - earlierIndex - 1);
+            state.PendingEdges.RemoveRange(earlierIndex + 1, state.PendingEdges.Count - earlierIndex - 1);
             loopCollapsed = true;
         }
-        else state.PendingRoute.Add(destination);
+        else { state.PendingRoute.Add(destination); state.PendingEdges.Add(edge); }
         state.CurrentProvince = destination;
         return edge;
     }
@@ -138,7 +145,8 @@ public class SupplyRouteTracker : MonoBehaviour
             ProvinceModel first = state.PendingRoute[i - 1];
             ProvinceModel second = state.PendingRoute[i];
             if (state.TryGetActiveEdge(first, second, out _)) continue;
-            state.ActiveEdges.Add(new RouteEdge(first, second, SupplyFundingType.Stock));
+            RouteEdge pendingEdge = i < state.PendingEdges.Count ? state.PendingEdges[i] : null;
+            state.ActiveEdges.Add(pendingEdge ?? new RouteEdge(first, second, SupplyFundingType.Stock));
             added++;
         }
         ResetPending(state, operationProvince);
@@ -174,14 +182,15 @@ public class SupplyRouteTracker : MonoBehaviour
     }
 
     public static bool IsCity(ProvinceModel province) => province != null && province.GetComponentInChildren<CityCenter>(true) != null;
-    private static void EnsurePendingEndsAt(ArmyRouteState state, ProvinceModel province) { if (state.PendingRoute.Count == 0 || state.PendingRoute[^1] != province) state.PendingRoute.Add(province); }
-    private static void ResetPending(ArmyRouteState state, ProvinceModel province) { state.PendingRoute.Clear(); state.PendingRoute.Add(province); }
+    private static void EnsurePendingEndsAt(ArmyRouteState state, ProvinceModel province) { if (state.PendingRoute.Count == 0 || state.PendingRoute[^1] != province) { state.PendingRoute.Add(province); state.PendingEdges.Add(null); } }
+    private static void ResetPending(ArmyRouteState state, ProvinceModel province) { state.PendingRoute.Clear(); state.PendingEdges.Clear(); state.PendingRoute.Add(province); state.PendingEdges.Add(null); }
 
     public sealed class NationRouteState { public readonly HashSet<ProvinceModel> KnownCities = new(); }
     public sealed class ArmyRouteState
     {
         public ProvinceModel CurrentProvince;
         public readonly List<ProvinceModel> PendingRoute = new();
+        public readonly List<RouteEdge> PendingEdges = new();
         public readonly List<RouteEdge> ActiveEdges = new();
         public bool TryGetActiveEdge(ProvinceModel first, ProvinceModel second, out RouteEdge edge)
         {
@@ -199,7 +208,9 @@ public sealed class RouteEdge
     public readonly ProvinceModel First;
     public readonly ProvinceModel Second;
     public readonly SupplyFundingType Funding;
+    public readonly float StockCost;
+    public readonly float CargoCost;
     public int TraversalCount = 1;
-    public RouteEdge(ProvinceModel first, ProvinceModel second, SupplyFundingType funding) { First = first; Second = second; Funding = funding; }
+    public RouteEdge(ProvinceModel first, ProvinceModel second, SupplyFundingType funding, float stockCost = 0f, float cargoCost = 0f) { First = first; Second = second; Funding = funding; StockCost = stockCost; CargoCost = cargoCost; }
     public bool Matches(ProvinceModel first, ProvinceModel second) => (First == first && Second == second) || (First == second && Second == first);
 }

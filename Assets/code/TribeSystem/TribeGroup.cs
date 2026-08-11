@@ -19,6 +19,7 @@ public class TribeGroup : MonoBehaviour
     public float RequiredCharisma => Mathf.Clamp(baseCharismaRequirement + population * charismaPerPopulation, minimumCharismaRequirement, maximumCharismaRequirement);
     public ProvinceWalker Walker { get; private set; }
     public Transform FollowTarget { get; private set; }
+    public General RecruitingGeneral { get; private set; }
 
     private void Awake()
     {
@@ -47,8 +48,22 @@ public class TribeGroup : MonoBehaviour
     {
         if (target == null || charisma == null || charisma.Current < RequiredCharisma) return false;
         FollowTarget = target;
+        RecruitingGeneral = target.GetComponent<General>();
         Walker?.CancelMovement();
+        GameEvents.TribeRecruited(this, RecruitingGeneral);
         return true;
+    }
+
+    public float SetPopulation(float newPopulation)
+    {
+        population = Mathf.Max(0f, newPopulation);
+        if (population <= 0f)
+        {
+            FollowTarget = null;
+            RecruitingGeneral = null;
+            gameObject.SetActive(false);
+        }
+        return population;
     }
 
     private void OnTurnEnded(int turnNumber)

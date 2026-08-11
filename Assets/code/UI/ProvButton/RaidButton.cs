@@ -119,7 +119,7 @@ public class RaidButton : MonoBehaviour
         }
         
         // Calculate expected loot for preview
-        float expectedLoot = RaidManager.Instance.CalculateLootAmount(currentProvince, raider.CommandedArmy.ArmySize);
+        float expectedLoot = RaidManager.Instance.CalculatePlayerLootAmount(currentProvince, raider.CommandedArmy.ArmySize);
         float availableCapacity = raider.AvailableLootCapacity;
         float actualLoot = Mathf.Min(expectedLoot, availableCapacity);
         

@@ -568,6 +568,17 @@ public class SelectableGeneral : MonoBehaviour, IProvinceDetector
         CheckCityCenter();
         _lastScanPosition = transform.position;
     }
+
+    /// <summary>Restores a rejected movement without emitting province enter/exit events.</summary>
+    public void RestoreProvinceWithoutEvent(ProvinceModel province)
+    {
+        if (province == null) return;
+        _currentProvince = province;
+        transform.position = province.transform.position;
+        if (rb != null) rb.position = province.transform.position;
+        _lastScanPosition = transform.position;
+        _currentProvinces.Clear();
+    }
     
     #endregion
     

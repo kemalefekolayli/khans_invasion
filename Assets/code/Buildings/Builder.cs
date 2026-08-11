@@ -119,6 +119,11 @@ public class Builder : MonoBehaviour
         
         GameEvents.BuildingConstructed(province, buildingType);
         GameEvents.BuildingBuilt(buildingType, province);
+
+        NationModel playerNation = PlayerNation.Instance?.currentNation;
+        General selectedGeneral = GeneralSelectionManager.Instance?.SelectedGeneral?.GetComponent<General>();
+        if (playerNation != null && province.provinceOwner == playerNation && selectedGeneral != null && selectedGeneral.CommandedArmy != null && selectedGeneral.CommandedArmy.IsPlayerArmy)
+            GameEvents.RecordCityOperation(playerNation, province, CityOperationType.Building, selectedGeneral);
         
         return cost;
     }

@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public enum CityOperationType { Discovery, Raid, Siege, Battle }
+public enum CityOperationType { Discovery, Raid, Siege, Battle, Building }
 
 /// <summary>
 /// Central event system for game-wide communication.
@@ -57,6 +57,9 @@ public static class GameEvents
     public static event Action<Army> OnArmyDestroyed;
     public static event Action<Army, General> OnArmyAssigned;
     public static event Action<Army> OnArmySizeChanged;
+    public static event Action<Army> OnArmySupplyChanged;
+    public static event Action<General> OnGeneralLootChanged;
+    public static event Action<TribeGroup, General> OnTribeRecruited;
     public static event Action<Army, Army> OnArmyBattleStarted;
     public static event Action<Army, Army, float, float, int, int, int> OnArmyBattleTick;
     public static event Action<Army, Army, ArmyBattleEndReason> OnArmyBattleEnded;
@@ -216,6 +219,21 @@ public static class GameEvents
     public static void ArmySizeChanged(Army army)
     {
         OnArmySizeChanged?.Invoke(army);
+    }
+
+    public static void ArmySupplyChanged(Army army)
+    {
+        OnArmySupplyChanged?.Invoke(army);
+    }
+
+    public static void GeneralLootChanged(General general)
+    {
+        OnGeneralLootChanged?.Invoke(general);
+    }
+
+    public static void TribeRecruited(TribeGroup tribe, General recruiter)
+    {
+        OnTribeRecruited?.Invoke(tribe, recruiter);
     }
 
     public static void ArmyBattleStarted(Army armyA, Army armyB)

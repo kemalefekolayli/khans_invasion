@@ -8,6 +8,8 @@ public class TribeSpawner : MonoBehaviour
 
     [Header("Spawn Settings")]
     [SerializeField, Min(0)] private int initialTribeCount = 5;
+    [SerializeField] private bool spawnInitialTribesNearPlayer = true;
+    [SerializeField, Min(0)] private int initialNearbyTribeCount = 3;
     [SerializeField, Range(0f, 1f)] private float spawnChancePerTurn = 0.2f;
     [SerializeField, Min(1)] private int maximumActiveTribes = 12;
 
@@ -35,6 +37,7 @@ public class TribeSpawner : MonoBehaviour
     {
         GameEvents.OnProvincesAssigned += TryInitialize;
         GameEvents.OnMapLoaded += TryInitialize;
+        GameEvents.OnPlayerNationReady += TryInitialize;
         GameEvents.OnTurnEnded += OnTurnEnded;
     }
 
@@ -42,17 +45,24 @@ public class TribeSpawner : MonoBehaviour
     {
         GameEvents.OnProvincesAssigned -= TryInitialize;
         GameEvents.OnMapLoaded -= TryInitialize;
+        GameEvents.OnPlayerNationReady -= TryInitialize;
         GameEvents.OnTurnEnded -= OnTurnEnded;
     }
 
     private void TryInitialize()
     {
-        if (initialized || GetEligibleStates().Count == 0) return;
+        if (initialized || PlayerNation.Instance?.currentNation == null || GetEligibleStates().Count == 0) return;
 
         initialized = true;
         for (int i = 0; i < initialTribeCount; i++)
         {
-            if (!TrySpawnTribe()) break;
+            List<StateModel> nearbyStates = spawnInitialTribesNearPlayer && i < initialNearbyTribeCount
+                ? GetNearbyEligibleStates()
+                : null;
+            bool spawned = TrySpawnTribe(nearbyStates);
+            if (!spawned) break;
+            if (nearbyStates != null && nearbyStates.Count > 0)
+                GameLog.Log(GameLogCategory.Core, $"[TribeSpawner] Initial tribe {i + 1} spawned using nearby player states.");
         }
     }
 
@@ -63,13 +73,20 @@ public class TribeSpawner : MonoBehaviour
         TrySpawnTribe();
     }
 
-    private bool TrySpawnTribe()
+    private bool TrySpawnTribe(List<StateModel> preferredStates = null)
     {
         if (GetActiveTribeCount() >= maximumActiveTribes) return false;
 
         List<StateModel> eligibleStates = GetEligibleStates();
         eligibleStates.RemoveAll(HasActiveTribeInState);
         if (eligibleStates.Count == 0) return false;
+
+        if (preferredStates != null && preferredStates.Count > 0)
+        {
+            eligibleStates.RemoveAll(state => !preferredStates.Contains(state));
+            if (eligibleStates.Count == 0)
+                return TrySpawnTribe();
+        }
 
         StateModel state = eligibleStates[Random.Range(0, eligibleStates.Count)];
         List<ProvinceModel> provinces = GetEligibleProvinces(state);
@@ -90,6 +107,25 @@ public class TribeSpawner : MonoBehaviour
         tribeObject.name = $"Tribe of {(string.IsNullOrEmpty(state.stateName) ? "Wanderers" : state.stateName)}";
         GameLog.Log(GameLogCategory.Core, $"[TribeSpawner] Spawned {tribeObject.name} ({population:F0} population) in {province.provinceName}.");
         return true;
+    }
+
+    private static List<StateModel> GetNearbyEligibleStates()
+    {
+        List<StateModel> nearby = new List<StateModel>();
+        NationModel playerNation = PlayerNation.Instance?.currentNation;
+        if (playerNation?.provinceList == null) return nearby;
+
+        foreach (ProvinceModel province in playerNation.provinceList)
+        {
+            if (province == null || province.neighbors == null) continue;
+            foreach (ProvinceModel neighbor in province.neighbors)
+            {
+                StateModel state = neighbor?.provinceState;
+                if (state == null || nearby.Contains(state) || GetEligibleProvinces(state).Count == 0 || HasActiveTribeInState(state)) continue;
+                nearby.Add(state);
+            }
+        }
+        return nearby;
     }
 
     private static Transform GetTribesContainer()

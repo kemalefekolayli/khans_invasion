@@ -24,14 +24,24 @@ public class RaidManager : MonoBehaviour, ITurnProcessor
     [Tooltip("Minimum loot percentage at 100 troops")]
     [SerializeField] private float minLootPercent = 0.10f; // 10%
     
-    [Tooltip("Maximum loot percentage at 1000 troops")]
-    [SerializeField] private float maxLootPercent = 0.60f; // 60%
+    [Tooltip("Maximum loot percentage at the maximum troop anchor")]
+    [SerializeField] private float maxLootPercent = 0.725f; // 72.5%
     
     [Tooltip("Troop count for minimum loot percentage")]
     [SerializeField] private float minTroopCount = 100f;
     
     [Tooltip("Troop count for maximum loot percentage")]
-    [SerializeField] private float maxTroopCount = 1000f;
+    [SerializeField] private float maxTroopCount = 500f;
+    [Tooltip("Below 1 makes loot gains rise faster between the troop anchors")]
+    [SerializeField, Min(0.01f)] private float lootCurveExponent = 0.8f;
+    [Tooltip("Player-only multiplier applied after the troop loot curve")]
+    [SerializeField, Min(0f)] private float playerRaidEffectiveness = 1f;
+
+    [Header("Player Raid Casualties")]
+    [SerializeField, Min(0)] private int minimumCasualtiesAtMinTroops = 5;
+    [SerializeField, Min(0)] private int maximumCasualtiesAtMinTroops = 15;
+    [SerializeField, Min(0)] private int minimumCasualtiesAtMaxTroops = 10;
+    [SerializeField, Min(0)] private int maximumCasualtiesAtMaxTroops = 50;
     
     [Header("Regeneration Settings")]
     [Tooltip("Regeneration rate per turn (percentage of missing loot - higher = faster recovery)")]
@@ -106,9 +116,9 @@ public class RaidManager : MonoBehaviour, ITurnProcessor
         // Clamp troop count to valid range
         float clampedTroops = Mathf.Clamp(troopCount, minTroopCount, maxTroopCount);
         
-        // Linear interpolation between min and max percentage
-        float t = (clampedTroops - minTroopCount) / (maxTroopCount - minTroopCount);
-        return Mathf.Lerp(minLootPercent, maxLootPercent, t);
+        float range = Mathf.Max(0.001f, maxTroopCount - minTroopCount);
+        float t = (clampedTroops - minTroopCount) / range;
+        return Mathf.Lerp(minLootPercent, maxLootPercent, Mathf.Pow(t, lootCurveExponent));
     }
     
     /// <summary>
@@ -194,7 +204,7 @@ public class RaidManager : MonoBehaviour, ITurnProcessor
         }
         
         // Calculate loot
-        float lootAmount = CalculateLootAmount(province, troopCount) * GetRaidEffectiveness();
+        float lootAmount = CalculatePlayerLootAmount(province, troopCount);
         
         // Check raider's carrying capacity
         float availableCapacity = raider.MaxLootCapacity - raider.CarriedLoot;
@@ -210,6 +220,7 @@ public class RaidManager : MonoBehaviour, ITurnProcessor
         // Execute the raid
         province.availableLoot -= actualLoot;
         raider.AddLoot(actualLoot);
+        ApplyPlayerRaidCasualties(raider, troopCount);
         
         // Mark province as raided this turn
         provincesRaidedThisTurn.Add(province.provinceId);
@@ -234,8 +245,16 @@ public class RaidManager : MonoBehaviour, ITurnProcessor
         
         // Fire raid event
         GameEvents.ProvinceRaided(province, raider, actualLoot);
+        NationModel playerNation = PlayerNation.Instance?.currentNation;
+        if (playerNation != null && raider.CommandedArmy != null && raider.CommandedArmy.IsPlayerArmy)
+            GameEvents.RecordCityOperation(playerNation, province, CityOperationType.Raid, raider);
         
         return actualLoot;
+    }
+
+    public float CalculatePlayerLootAmount(ProvinceModel province, float troopCount)
+    {
+        return CalculateLootAmount(province, troopCount) * playerRaidEffectiveness;
     }
 
     public float ExecuteRaid(ProvinceModel province, Army raiderArmy)
@@ -413,5 +432,34 @@ public class RaidManager : MonoBehaviour, ITurnProcessor
         return AIManager.Instance != null && AIManager.Instance.Settings != null
             ? Mathf.Clamp01(AIManager.Instance.Settings.AIRaidEffectiveness)
             : 0.4f;
+    }
+
+    private void ApplyPlayerRaidCasualties(General raider, float troopCount)
+    {
+        Army army = raider?.CommandedArmy;
+        if (army == null || army.ArmySize <= 1f) return;
+
+        float range = Mathf.Max(0.001f, maxTroopCount - minTroopCount);
+        float t = Mathf.Clamp01((troopCount - minTroopCount) / range);
+        int minimum = Mathf.RoundToInt(Mathf.Lerp(minimumCasualtiesAtMinTroops, minimumCasualtiesAtMaxTroops, t));
+        int maximum = Mathf.RoundToInt(Mathf.Lerp(maximumCasualtiesAtMinTroops, maximumCasualtiesAtMaxTroops, t));
+        maximum = Mathf.Max(minimum, maximum);
+        float mean = (minimum + maximum) * 0.5f;
+        float standardDeviation = Mathf.Max(0.1f, (maximum - minimum) / 6f);
+        int casualties = Mathf.RoundToInt(Mathf.Clamp(SampleNormal(mean, standardDeviation), minimum, maximum));
+        casualties = Mathf.Clamp(casualties, 0, Mathf.Max(0, Mathf.FloorToInt(army.ArmySize) - 1));
+        if (casualties <= 0) return;
+
+        army.RemoveSoldiers(casualties);
+        if (logRaidEvents)
+            GameLog.Log(GameLogCategory.Raid, $"[RaidManager] {raider.GeneralName} lost {casualties} troops while raiding.");
+    }
+
+    private static float SampleNormal(float mean, float standardDeviation)
+    {
+        float u1 = Mathf.Max(0.0001f, Random.value);
+        float u2 = Random.value;
+        float standardNormal = Mathf.Sqrt(-2f * Mathf.Log(u1)) * Mathf.Cos(2f * Mathf.PI * u2);
+        return mean + standardDeviation * standardNormal;
     }
 }
