@@ -21,20 +21,32 @@ public class CenterWarningPopupSpawner : MonoBehaviour
     private TextMeshProUGUI warningText;
     private Coroutine activeRoutine;
     private float nextAllowedTime;
+    private string lastMessage;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void EnsureRuntimeInstance()
     {
-        if (Instance != null || FindFirstObjectByType<CenterWarningPopupSpawner>() != null) return;
-
-        GameObject obj = new GameObject("CenterWarningPopupSpawner");
-        obj.AddComponent<CenterWarningPopupSpawner>();
+        GetOrCreateInstance();
     }
 
     public static void Show(string message)
     {
-        if (Instance == null || string.IsNullOrEmpty(message)) return;
-        Instance.ShowInternal(message);
+        if (string.IsNullOrEmpty(message)) return;
+
+        CenterWarningPopupSpawner spawner = GetOrCreateInstance();
+        if (spawner != null)
+            spawner.ShowInternal(message);
+    }
+
+    private static CenterWarningPopupSpawner GetOrCreateInstance()
+    {
+        if (Instance != null) return Instance;
+
+        CenterWarningPopupSpawner existing = FindFirstObjectByType<CenterWarningPopupSpawner>();
+        if (existing != null) return existing;
+
+        GameObject obj = new GameObject("CenterWarningPopupSpawner");
+        return obj.AddComponent<CenterWarningPopupSpawner>();
     }
 
     private void Awake()
@@ -46,13 +58,21 @@ public class CenterWarningPopupSpawner : MonoBehaviour
         }
 
         Instance = this;
+        DontDestroyOnLoad(gameObject);
         BuildCanvas();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 
     private void ShowInternal(string message)
     {
-        if (Time.unscaledTime < nextAllowedTime) return;
+        if (message == lastMessage && Time.unscaledTime < nextAllowedTime) return;
 
+        lastMessage = message;
         nextAllowedTime = Time.unscaledTime + cooldownSeconds;
 
         if (activeRoutine != null)

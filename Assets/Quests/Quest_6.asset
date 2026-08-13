@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_6
   m_EditorClassIdentifier: 
   questId: 5
-  questTitle: Destroy a nation.
-  questDescription: Takeover an entire nation.
-  questType: 5
-  targetCount: 1
-  rewardType: 4
-  rewardAmount: 1
-  rewardDescription: Unlock the Move Capital ability.
+  questTitle: A Full Treasury
+  questDescription: Accumulate {target} gold.
+  questType: 6
+  targetCount: 500
+  useDynamicStartingTarget: 1
+  requiredBuildingType: 
+  rewardType: 0
+  rewardAmount: 150
+  goldRewardIncomeTurns: 1.5
+  rewardDescription: '{gold} gold'
   prerequisiteQuestId: 4

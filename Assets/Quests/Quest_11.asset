@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_11
   m_EditorClassIdentifier: 
   questId: 10
-  questTitle: Master builders.
-  questDescription: Build fifteen buildings across your provinces.
-  questType: 1
-  targetCount: 15
-  rewardType: 2
-  rewardAmount: 20
-  rewardDescription: Gain +20 trade income.
-  prerequisiteQuestId: 1
+  questTitle: Field a Host
+  questDescription: Reach an army size of {target}.
+  questType: 10
+  targetCount: 200
+  useDynamicStartingTarget: 0
+  requiredBuildingType: 
+  rewardType: 0
+  rewardAmount: 75
+  goldRewardIncomeTurns: 0.75
+  rewardDescription: '{gold} gold'
+  prerequisiteQuestId: 9

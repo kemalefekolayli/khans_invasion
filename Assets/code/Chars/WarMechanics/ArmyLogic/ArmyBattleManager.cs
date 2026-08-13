@@ -21,6 +21,14 @@ public class ArmyBattleManager : MonoBehaviour
     [SerializeField] private float qualityReward = 0.03f;
     [SerializeField] private float troopLevelXpReward = 15f;
 
+    [Header("Capture Rules")]
+    [SerializeField] private bool requireCapitalLossForCapture = true;
+    [Header("Player Progression Modifiers")]
+    [SerializeField, Min(0)] private int playerDiceFlatBonus = 0;
+
+    public int PlayerDiceFlatBonus => playerDiceFlatBonus;
+    public void AddPlayerDiceFlatBonus(int amount) => playerDiceFlatBonus = Mathf.Max(0, playerDiceFlatBonus + amount);
+
     private readonly Dictionary<int, ArmyBattleState> activeBattles = new Dictionary<int, ArmyBattleState>();
     private readonly Dictionary<Army, int> battleByArmy = new Dictionary<Army, int>();
     private readonly List<int> battleIdBuffer = new List<int>();
@@ -267,6 +275,8 @@ public class ArmyBattleManager : MonoBehaviour
 
         int armyARoll = Random.Range(1, 7);
         int armyBRoll = Random.Range(1, 7);
+        if (state.armyA.IsPlayerArmy) armyARoll = Mathf.Clamp(armyARoll + playerDiceFlatBonus, 1, 6);
+        if (state.armyB.IsPlayerArmy) armyBRoll = Mathf.Clamp(armyBRoll + playerDiceFlatBonus, 1, 6);
         float armyAPower = state.armyA.GetEffectiveStrength() * armyARoll;
         float armyBPower = state.armyB.GetEffectiveStrength() * armyBRoll;
 
@@ -326,7 +336,7 @@ public class ArmyBattleManager : MonoBehaviour
 
         if (reason == ArmyBattleEndReason.Defeated && loser != null)
         {
-            loser.ResolveDefeatAftermath(winner);
+            loser.ResolveDefeatAftermath(winner, requireCapitalLossForCapture);
             GameEvents.ArmyDefeated(loser);
         }
     }

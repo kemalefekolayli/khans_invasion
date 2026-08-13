@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_14
   m_EditorClassIdentifier: 
   questId: 13
-  questTitle: Raise the banners.
-  questDescription: Recruit 100 troops to your armies.
-  questType: 9
-  targetCount: 100
+  questTitle: Blooded in Battle
+  questDescription: Defeat {target} enemy armies.
+  questType: 3
+  targetCount: 3
+  useDynamicStartingTarget: 0
+  requiredBuildingType: 
   rewardType: 0
-  rewardAmount: 200
-  rewardDescription: Gain 200 gold.
-  prerequisiteQuestId: 9
+  rewardAmount: 150
+  goldRewardIncomeTurns: 1.5
+  rewardDescription: '{gold} gold'
+  prerequisiteQuestId: 12

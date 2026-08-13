@@ -5,6 +5,7 @@ using UnityEngine;
 public class SupplyMovementCoordinator : MonoBehaviour
 {
     public static SupplyMovementCoordinator Instance { get; private set; }
+    private const float BaseCargoSupplyCostMultiplier = 2f;
 
     [Header("Army Supply")]
     [SerializeField, Min(1f)] private float maximumSupply = 100f;
@@ -14,6 +15,10 @@ public class SupplyMovementCoordinator : MonoBehaviour
     [SerializeField, Min(0f)] private float capacityGrowth = 0.6f;
     [SerializeField, Min(1f)] private float minimumSupplyCapacity = 1f;
     [SerializeField, Min(0f)] private float tribeSupplyWeight = 0.5f;
+    [Header("Progression Modifiers")]
+    [SerializeField, Min(0f)] private float supplyCapacityMultiplier = 1f;
+    [SerializeField, Range(0f, 1f)] private float friendlySupplyCostReduction = 0f;
+    [SerializeField, Min(0f)] private float cargoSupplyCostMultiplier = BaseCargoSupplyCostMultiplier;
     [Header("Diagnostics")]
     [SerializeField] private bool diagnosticsEnabled = true;
     [Header("Construction Cost")]
@@ -23,6 +28,10 @@ public class SupplyMovementCoordinator : MonoBehaviour
     private readonly Dictionary<Army, float> nextBlockLogTime = new();
     private const float BlockLogCooldown = 2f;
     private SupplyCostCalculator costCalculator;
+
+    public float SupplyCapacityMultiplier => supplyCapacityMultiplier;
+    public float FriendlySupplyCostReduction => friendlySupplyCostReduction;
+    public float CargoSupplyCostMultiplier => cargoSupplyCostMultiplier;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void EnsureInstance()
@@ -111,9 +120,11 @@ public class SupplyMovementCoordinator : MonoBehaviour
             return true;
 
         bool known = tracker.IsKnownCityReadOnly(nation, destination);
-        float required = costCalculator.Calculate(new SupplyMoveContext(GetEffectiveSupplySize(army), destination.provinceOwner == nation, known));
+        float required = CalculateBaseCost(army, destination, nation, known);
+        float stockRequired = Mathf.Min(required, account.Available);
+        float cargoRequired = (required - stockRequired) * cargoSupplyCostMultiplier;
         float available = account.Available + GetWalletAvailable(army);
-        if (available + 0.001f >= required)
+        if (GetWalletAvailable(army) + 0.001f >= cargoRequired)
             return true;
 
         reason = "Supply depleted. Return to the nearest resupply city.";
@@ -181,12 +192,14 @@ public class SupplyMovementCoordinator : MonoBehaviour
     {
         bool known = tracker.IsKnownCity(nation, destination);
         SupplyMoveContext context = new(GetEffectiveSupplySize(army), destination.provinceOwner == nation, known);
-        float cost = costCalculator.Calculate(context);
+        float cost = CalculateBaseCost(army, destination, nation, known);
         ArmySupplyAccount account = army.GetComponent<ArmySupplyAccount>();
         General commander = army.CommandingGeneral;
         float stockAvailable = account != null ? account.Available : 0f;
         float walletAvailable = commander != null ? commander.CarriedLoot : 0f;
-        if (account == null || stockAvailable + walletAvailable + 0.001f < cost)
+        float stockNeeded = Mathf.Min(cost, stockAvailable);
+        float walletNeeded = (cost - stockNeeded) * cargoSupplyCostMultiplier;
+        if (account == null || walletAvailable + 0.001f < walletNeeded)
         {
             float available = stockAvailable + walletAvailable;
             Log($"SUP LOW seq={sequence} army={army.name} edge={Name(source)}>{Name(destination)} need={cost:0.#} have={available:0.#}", army);
@@ -194,8 +207,8 @@ public class SupplyMovementCoordinator : MonoBehaviour
             return false;
         }
 
-        float stockSpent = account.SpendUpTo(cost);
-        float walletSpent = commander != null ? commander.RemoveLoot(cost - stockSpent) : 0f;
+        float stockSpent = account.SpendUpTo(stockNeeded);
+        float walletSpent = commander != null ? commander.RemoveLoot(walletNeeded) : 0f;
         SupplyFundingType funding = walletSpent > 0.001f ? SupplyFundingType.Cargo : SupplyFundingType.Stock;
         tracker.RecordPaidTransition(army, destination, funding, stockSpent, walletSpent, out bool loopCollapsed, out List<RouteEdge> refundedEdges);
         if (loopCollapsed)
@@ -282,7 +295,7 @@ public class SupplyMovementCoordinator : MonoBehaviour
     private float CalculateSupplyCapacity(Army army)
     {
         float sizeRatio = Mathf.Max(0f, GetEffectiveSupplySize(army) / Mathf.Max(1f, capacitySizeReference));
-        return Mathf.Max(minimumSupplyCapacity, maximumSupply * (1f + capacityGrowth * (Mathf.Sqrt(sizeRatio) - 1f)));
+        return Mathf.Max(minimumSupplyCapacity, maximumSupply * (1f + capacityGrowth * (Mathf.Sqrt(sizeRatio) - 1f)) * supplyCapacityMultiplier);
     }
     private void RefreshCapacity(Army army)
     {
@@ -306,6 +319,20 @@ public class SupplyMovementCoordinator : MonoBehaviour
         return army.ArmySize + tribePopulation * tribeSupplyWeight;
     }
     private static float GetWalletAvailable(Army army) => army?.CommandingGeneral != null ? army.CommandingGeneral.CarriedLoot : 0f;
+    private float CalculateBaseCost(Army army, ProvinceModel destination, NationModel nation, bool known)
+    {
+        float cost = costCalculator.Calculate(new SupplyMoveContext(GetEffectiveSupplySize(army), destination.provinceOwner == nation, known));
+        return destination.provinceOwner == nation ? cost * (1f - friendlySupplyCostReduction) : cost;
+    }
+    public void AddSupplyCapacityPercent(float percent)
+    {
+        supplyCapacityMultiplier = Mathf.Max(0f, supplyCapacityMultiplier + percent / 100f);
+        if (ArmyManager.Instance != null)
+            foreach (Army army in ArmyManager.Instance.GetPlayerArmies()) RefreshCapacity(army);
+    }
+    public void AddFriendlySupplyCostReductionPercent(float percent) => friendlySupplyCostReduction = Mathf.Clamp01(friendlySupplyCostReduction + percent / 100f);
+    public void SetCargoSupplyCostMultiplier(float multiplier) => cargoSupplyCostMultiplier = Mathf.Max(0f, multiplier);
+    public void SetCargoSupplyCostPercentOfBase(float percent) => SetCargoSupplyCostMultiplier(BaseCargoSupplyCostMultiplier * Mathf.Max(0f, percent) / 100f);
     private static string Name(ProvinceModel province) => province != null ? province.provinceName : "none";
 
     private void Log(string message, Object context)

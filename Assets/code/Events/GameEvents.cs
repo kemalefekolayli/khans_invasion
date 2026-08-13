@@ -59,6 +59,8 @@ public static class GameEvents
     public static event Action<Army> OnArmySizeChanged;
     public static event Action<Army> OnArmySupplyChanged;
     public static event Action<General> OnGeneralLootChanged;
+    public static event Action<Army, Army> OnEnemyCommanderCaptured;
+    public static event Action<Army, float> OnPlayerTroopsRecruited;
     public static event Action<TribeGroup, General> OnTribeRecruited;
     public static event Action<Army, Army> OnArmyBattleStarted;
     public static event Action<Army, Army, float, float, int, int, int> OnArmyBattleTick;
@@ -229,6 +231,16 @@ public static class GameEvents
     public static void GeneralLootChanged(General general)
     {
         OnGeneralLootChanged?.Invoke(general);
+    }
+
+    public static void EnemyCommanderCaptured(Army captive, Army playerCaptor)
+    {
+        OnEnemyCommanderCaptured?.Invoke(captive, playerCaptor);
+    }
+
+    public static void PlayerTroopsRecruited(Army army, float amount)
+    {
+        if (amount > 0f) OnPlayerTroopsRecruited?.Invoke(army, amount);
     }
 
     public static void TribeRecruited(TribeGroup tribe, General recruiter)

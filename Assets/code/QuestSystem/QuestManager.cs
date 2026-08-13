@@ -19,6 +19,8 @@ public class QuestManager : MonoBehaviour
     private HashSet<int> completedQuests = new HashSet<int>();
     private HashSet<int> claimedQuests = new HashSet<int>();
     private Dictionary<int, int> effectiveTargets = new Dictionary<int, int>();
+    private readonly Dictionary<int, HashSet<long>> distinctProvinceProgress = new();
+    private readonly Dictionary<int, int> claimedGoldRewards = new();
     private bool valueTargetsInitialized;
     private Coroutine effectiveTargetInitialization;
     
@@ -26,6 +28,16 @@ public class QuestManager : MonoBehaviour
     public event Action<int> OnQuestCompleted;
     public event Action<int> OnQuestClaimed;
     public event Action OnQuestTargetsInitialized;
+    public bool HasClaimableQuests
+    {
+        get
+        {
+            if (allQuests == null) return false;
+            foreach (QuestData quest in allQuests)
+                if (quest != null && CanClaimQuest(quest.questId)) return true;
+            return false;
+        }
+    }
     
     private void Awake()
     {
@@ -35,7 +47,11 @@ public class QuestManager : MonoBehaviour
             return;
         }
         Instance = this;
-        
+
+        QuestCatalog catalog = Resources.Load<QuestCatalog>("QuestCatalog");
+        if (catalog != null && catalog.quests != null && catalog.quests.Count > 0)
+            allQuests = new List<QuestData>(catalog.quests);
+        ValidateQuestDefinitions();
         InitializeQuestProgress();
         GameLog.Log(GameLogCategory.Core, "[QuestManager] Initialized");
     }
@@ -67,6 +83,8 @@ public class QuestManager : MonoBehaviour
         completedQuests.Clear();
         claimedQuests.Clear();
         effectiveTargets.Clear();
+        distinctProvinceProgress.Clear();
+        claimedGoldRewards.Clear();
         valueTargetsInitialized = false;
 
         if (allQuests == null) return;
@@ -128,7 +146,8 @@ public class QuestManager : MonoBehaviour
             GetCurrentValue(QuestType.AccumulateGold),
             GetCurrentValue(QuestType.ReachIncome),
             GetCurrentValue(QuestType.ReachTotalPopulation),
-            GetCurrentValue(QuestType.ReachArmySize));
+            GetCurrentValue(QuestType.ReachArmySize),
+            GetCurrentValue(QuestType.ReachCharisma));
         return true;
     }
 
@@ -141,7 +160,7 @@ public class QuestManager : MonoBehaviour
 
         foreach (QuestData quest in allQuests)
         {
-            if (quest == null || !IsValueQuest(quest.questType)) continue;
+            if (quest == null || !quest.useDynamicStartingTarget || !IsValueQuest(quest.questType)) continue;
 
             int startingValue = startingValues.GetValue(quest.questType);
             int dynamicTarget = Mathf.CeilToInt(startingValue * multiplier + margin);
@@ -159,13 +178,15 @@ public class QuestManager : MonoBehaviour
         private readonly int income;
         private readonly int population;
         private readonly int army;
+        private readonly int charisma;
 
-        public StartingValues(int gold, int income, int population, int army)
+        public StartingValues(int gold, int income, int population, int army, int charisma)
         {
             this.gold = gold;
             this.income = income;
             this.population = population;
             this.army = army;
+            this.charisma = charisma;
         }
 
         public int GetValue(QuestType questType)
@@ -180,6 +201,8 @@ public class QuestManager : MonoBehaviour
                     return population;
                 case QuestType.ReachArmySize:
                     return army;
+                case QuestType.ReachCharisma:
+                    return charisma;
                 default:
                     return 0;
             }
@@ -190,7 +213,8 @@ public class QuestManager : MonoBehaviour
             return gold == other.gold
                 && income == other.income
                 && population == other.population
-                && army == other.army;
+                && army == other.army
+                && charisma == other.charisma;
         }
 
         public override bool Equals(object obj)
@@ -206,6 +230,7 @@ public class QuestManager : MonoBehaviour
                 hash = (hash * 397) ^ income;
                 hash = (hash * 397) ^ population;
                 hash = (hash * 397) ^ army;
+                hash = (hash * 397) ^ charisma;
                 return hash;
             }
         }
@@ -215,10 +240,11 @@ public class QuestManager : MonoBehaviour
     {
         GameEvents.OnProvinceRaided += OnProvinceRaided;
         GameEvents.OnBuildingBuilt += OnBuildingBuilt;
+        GameEvents.OnEnemyCommanderCaptured += OnEnemyCommanderCaptured;
+        GameEvents.OnPlayerTroopsRecruited += OnPlayerTroopsRecruited;
         GameEvents.OnProvinceConquered += OnProvinceConquered;
         GameEvents.OnArmyDefeated += OnArmyDefeated;
         GameEvents.OnNationDestroyed += OnNationDestroyed;
-        GameEvents.OnArmySpawned += OnArmySpawned;
         GameEvents.OnPlayerStatsChanged += OnPlayerStatsChanged;
         GameEvents.OnPopulationGrowth += OnPopulationGrowth;
         GameEvents.OnTurnEnded += OnTurnEnded;
@@ -228,10 +254,11 @@ public class QuestManager : MonoBehaviour
     {
         GameEvents.OnProvinceRaided -= OnProvinceRaided;
         GameEvents.OnBuildingBuilt -= OnBuildingBuilt;
+        GameEvents.OnEnemyCommanderCaptured -= OnEnemyCommanderCaptured;
+        GameEvents.OnPlayerTroopsRecruited -= OnPlayerTroopsRecruited;
         GameEvents.OnProvinceConquered -= OnProvinceConquered;
         GameEvents.OnArmyDefeated -= OnArmyDefeated;
         GameEvents.OnNationDestroyed -= OnNationDestroyed;
-        GameEvents.OnArmySpawned -= OnArmySpawned;
         GameEvents.OnPlayerStatsChanged -= OnPlayerStatsChanged;
         GameEvents.OnPopulationGrowth -= OnPopulationGrowth;
         GameEvents.OnTurnEnded -= OnTurnEnded;
@@ -246,7 +273,58 @@ public class QuestManager : MonoBehaviour
     
     private void OnBuildingBuilt(string buildingType, ProvinceModel province)
     {
-        AddProgress(QuestType.BuildBuildings, 1);
+        if (allQuests == null || province == null || province.provinceOwner != PlayerNation.Instance?.Nation) return;
+
+        foreach (QuestData quest in allQuests)
+        {
+            if (quest == null || !IsQuestUnlocked(quest.questId) || completedQuests.Contains(quest.questId)) continue;
+
+            if (quest.questType == QuestType.BuildBuildings
+                && (string.IsNullOrEmpty(quest.requiredBuildingType) || quest.requiredBuildingType == buildingType))
+            {
+                AddProgressToQuest(quest, 1);
+            }
+            else if (quest.questType == QuestType.BuildInDistinctProvinces)
+            {
+                if (!distinctProvinceProgress.TryGetValue(quest.questId, out HashSet<long> provinces))
+                {
+                    provinces = new HashSet<long>();
+                    distinctProvinceProgress[quest.questId] = provinces;
+                }
+
+                if (provinces.Add(province.provinceId))
+                    AddProgressToQuest(quest, 1);
+            }
+        }
+    }
+
+    private void ValidateQuestDefinitions()
+    {
+        if (allQuests == null) return;
+        HashSet<int> ids = new HashSet<int>();
+        foreach (QuestData quest in allQuests)
+        {
+            if (quest == null) continue;
+            if (!ids.Add(quest.questId))
+                GameLog.Warning(GameLogCategory.Quest, $"[QuestManager] Duplicate quest ID {quest.questId}.");
+        }
+
+        foreach (QuestData quest in allQuests)
+        {
+            if (quest != null && quest.prerequisiteQuestId >= 0 && !ids.Contains(quest.prerequisiteQuestId))
+                GameLog.Warning(GameLogCategory.Quest, $"[QuestManager] Quest {quest.questId} missing prerequisite {quest.prerequisiteQuestId}.");
+        }
+    }
+
+    private void OnEnemyCommanderCaptured(Army captive, Army playerCaptor)
+    {
+        if (captive == null || playerCaptor == null || !playerCaptor.IsPlayerArmy || captive.IsPlayerArmy) return;
+        AddProgress(QuestType.CaptureEnemyCommanders, 1);
+    }
+
+    private void OnPlayerTroopsRecruited(Army army, float amount)
+    {
+        AddProgress(QuestType.RecruitTroops, Mathf.FloorToInt(amount));
     }
     
     private void OnProvinceConquered(ProvinceModel province, NationModel oldOwner, NationModel newOwner)
@@ -276,12 +354,6 @@ public class QuestManager : MonoBehaviour
         AddProgress(QuestType.DestroyNation, 1);
     }
     
-    private void OnArmySpawned(Army army, General general)
-    {
-        // Count newly recruited troops for the player
-        if (army?.OwnerNation != PlayerNation.Instance?.Nation) return;
-        AddProgress(QuestType.RecruitTroops, (int)army.ArmySize);
-    }
     
     private void OnPlayerStatsChanged()
     {
@@ -319,25 +391,28 @@ public class QuestManager : MonoBehaviour
             if (!unlockedQuestIds.Contains(quest.questId)) continue;
             if (completedQuests.Contains(quest.questId)) continue;
             
-            questProgress[quest.questId] += amount;
-            int target = GetEffectiveTarget(quest.questId);
-            GameLog.Log(GameLogCategory.Core, $"[QuestManager] Quest {quest.questId} progress: {questProgress[quest.questId]}/{target}");
-            
-            OnQuestProgressUpdated?.Invoke(quest.questId);
-            
-            if (questProgress[quest.questId] >= target)
-            {
-                completedQuests.Add(quest.questId);
-                GameLog.Log(GameLogCategory.Core, $"[QuestManager] Quest {quest.questId} COMPLETED!");
-                OnQuestCompleted?.Invoke(quest.questId);
-                completedQuest = true;
-            }
+            completedQuest |= AddProgressToQuest(quest, amount);
         }
 
         if (completedQuest)
         {
             CheckValueQuests();
         }
+    }
+
+    private bool AddProgressToQuest(QuestData quest, int amount)
+    {
+        if (quest == null || amount <= 0 || completedQuests.Contains(quest.questId)) return false;
+        questProgress[quest.questId] += amount;
+        int target = GetEffectiveTarget(quest.questId);
+        GameLog.Log(GameLogCategory.Core, $"[QuestManager] Quest {quest.questId} progress: {questProgress[quest.questId]}/{target}");
+        OnQuestProgressUpdated?.Invoke(quest.questId);
+        if (questProgress[quest.questId] < target) return false;
+
+        completedQuests.Add(quest.questId);
+        GameLog.Log(GameLogCategory.Core, $"[QuestManager] Quest {quest.questId} COMPLETED!");
+        OnQuestCompleted?.Invoke(quest.questId);
+        return true;
     }
     
     /// <summary>
@@ -383,6 +458,7 @@ public class QuestManager : MonoBehaviour
             case QuestType.ReachIncome:
             case QuestType.ReachTotalPopulation:
             case QuestType.ReachArmySize:
+            case QuestType.ReachCharisma:
                 return true;
             default:
                 return false;
@@ -423,6 +499,8 @@ public class QuestManager : MonoBehaviour
             }
             case QuestType.ReachArmySize:
                 return ArmyManager.Instance != null ? (int)ArmyManager.Instance.TotalPlayerSoldiers : 0;
+            case QuestType.ReachCharisma:
+                return Mathf.FloorToInt(player.GetComponent<CharismaSystem>()?.Current ?? 0f);
             default:
                 return 0;
         }
@@ -478,6 +556,25 @@ public class QuestManager : MonoBehaviour
     {
         return allQuests == null ? null : allQuests.Find(q => q != null && q.questId == questId);
     }
+
+    public string GetCurrentDisplayDescription(int questId)
+    {
+        QuestData quest = GetQuestById(questId);
+        return quest == null ? string.Empty : ReplaceDynamicTokens(quest.questDescription, quest);
+    }
+
+    public string GetCurrentRewardDescription(int questId)
+    {
+        QuestData quest = GetQuestById(questId);
+        return quest == null ? string.Empty : ReplaceDynamicTokens(quest.rewardDescription, quest);
+    }
+
+    private string ReplaceDynamicTokens(string text, QuestData quest)
+    {
+        return (text ?? string.Empty)
+            .Replace("{target}", GetEffectiveTarget(quest.questId).ToString())
+            .Replace("{gold}", GetEffectiveGoldReward(quest).ToString());
+    }
     
     public bool TryClaimQuest(int questId)
     {
@@ -486,8 +583,8 @@ public class QuestManager : MonoBehaviour
         
         ApplyReward(quest);
         claimedQuests.Add(questId);
-        
-        GameLog.Log(GameLogCategory.Core, $"[QuestManager] Quest {questId} CLAIMED! Reward: {quest.rewardDescription}");
+
+        GameLog.Log(GameLogCategory.Core, $"[QuestManager] Quest {questId} CLAIMED! Reward: {GetCurrentRewardDescription(questId)}");
         OnQuestClaimed?.Invoke(questId);
         
         return true;
@@ -498,12 +595,12 @@ public class QuestManager : MonoBehaviour
         PlayerNation player = PlayerNation.Instance;
         if (player == null) return;
         
+        int goldReward = GetEffectiveGoldReward(quest);
+        claimedGoldRewards[quest.questId] = goldReward;
+
         switch (quest.rewardType)
         {
             case RewardType.Gold:
-                player.nationMoney += quest.rewardAmount;
-                GameEvents.PlayerStatsChanged();
-                GameLog.Log(GameLogCategory.Core, $"[QuestManager] Reward: +{quest.rewardAmount} gold");
                 break;
                 
             case RewardType.PopulationCapacity:
@@ -530,7 +627,46 @@ public class QuestManager : MonoBehaviour
                 player.canMoveCapital = true;
                 GameLog.Log(GameLogCategory.Core, "[QuestManager] Reward: Move Capital ability unlocked!");
                 break;
+            case RewardType.GeneralLimitFlat:
+                MilitaryEconomy.GetOrCreate().AddGeneralLimitFlat(quest.rewardAmount);
+                break;
+            case RewardType.SupplyCapacityPercent:
+                SupplyMovementCoordinator.Instance?.AddSupplyCapacityPercent(quest.rewardAmount);
+                break;
+            case RewardType.FriendlySupplyCostReductionPercent:
+                SupplyMovementCoordinator.Instance?.AddFriendlySupplyCostReductionPercent(quest.rewardAmount);
+                break;
+            case RewardType.CargoSupplyCostMultiplier:
+                SupplyMovementCoordinator.Instance?.SetCargoSupplyCostPercentOfBase(quest.rewardAmount);
+                break;
+            case RewardType.BuildingCostReductionPercent:
+                (Builder.Instance != null ? Builder.Instance : FindFirstObjectByType<Builder>())?.AddPlayerBuildingCostReductionPercent(quest.rewardAmount);
+                break;
+            case RewardType.PlayerDiceFlatBonus:
+                (ArmyBattleManager.Instance != null ? ArmyBattleManager.Instance : FindFirstObjectByType<ArmyBattleManager>())?.AddPlayerDiceFlatBonus(quest.rewardAmount);
+                break;
         }
+
+        if (goldReward > 0)
+        {
+            player.nationMoney += goldReward;
+            GameLog.Log(GameLogCategory.Quest, $"[QuestManager] Reward: +{goldReward} gold");
+        }
+
+        CharismaSystem charisma = player.GetComponent<CharismaSystem>();
+        if (charisma != null)
+            charisma.AddCharisma(0.5f, "quest reward claimed");
+
+        GameEvents.PlayerStatsChanged();
+    }
+
+    private int GetEffectiveGoldReward(QuestData quest)
+    {
+        if (quest == null) return 0;
+        if (claimedGoldRewards.TryGetValue(quest.questId, out int claimedGold)) return claimedGold;
+        float income = PlayerNation.Instance != null ? PlayerNation.Instance.TotalIncome : 0f;
+        int dynamicGold = Mathf.Max(0, Mathf.RoundToInt(income * Mathf.Max(0f, quest.goldRewardIncomeTurns)));
+        return quest.rewardType == RewardType.Gold ? Mathf.Max(quest.rewardAmount, dynamicGold) : dynamicGold;
     }
     
     private void SpawnQuestRewardGeneral(int armySize)

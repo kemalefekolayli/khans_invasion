@@ -34,6 +34,7 @@ public class Army : MonoBehaviour
     private Renderer[] visualRenderers;
     private readonly List<Army> captiveArmies = new List<Army>();
     private Army captiveFollowTarget;
+    private bool hasBeenCapturedByPlayer;
     private SpriteRenderer captiveChainRenderer;
     private Sprite captiveChainSprite;
     private string loadedChainSpritePath;
@@ -228,11 +229,17 @@ public class Army : MonoBehaviour
         }
     }
 
-    public void ResolveDefeatAftermath(Army winner)
+    public void ResolveDefeatAftermath(Army winner, bool requireCapitalLossForCapture)
     {
         ReleaseCaptives();
 
         if (this == null || ArmySize <= 0) return;
+
+        if (!requireCapitalLossForCapture)
+        {
+            if (winner != null) CaptureBy(winner);
+            return;
+        }
 
         StartRegroupingIfAllied();
 
@@ -263,6 +270,7 @@ public class Army : MonoBehaviour
     public void CaptureBy(Army captor)
     {
         if (captor == null || captor == this) return;
+        bool firstCapture = !IsCaptured;
 
         if (moveCoroutine != null)
         {
@@ -292,6 +300,16 @@ public class Army : MonoBehaviour
 
         if (commandingGeneral != null)
             commandingGeneral.SetCaptured(captor);
+
+        if (firstCapture
+            && !hasBeenCapturedByPlayer
+            && commandingGeneral != null
+            && captor.IsPlayerArmy
+            && !IsPlayerArmy)
+        {
+            hasBeenCapturedByPlayer = true;
+            GameEvents.EnemyCommanderCaptured(this, captor);
+        }
 
         GameLog.Log(GameLogCategory.Core, $"[Army] {data.armyName} captured by {captor.Data.armyName}");
     }

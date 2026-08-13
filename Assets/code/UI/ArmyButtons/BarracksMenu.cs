@@ -5,7 +5,7 @@ public class BarracksMenu : MonoBehaviour
     [SerializeField] private GameObject barracksMenuUI;
 
     private ProvinceModel currentProvince;
-    void Start()
+    void Awake()
     {
         SetActive(barracksMenuUI, false);
     }
@@ -13,15 +13,17 @@ public class BarracksMenu : MonoBehaviour
     {
         GameEvents.OnBarrackMenuOpened += OpenBarracksMenu;
         GameEvents.OnCityCenterExit += CloseBarracksMenu;
-        GameEvents.OnProvinceEnter += (ProvinceModel province) => currentProvince = province;
+        GameEvents.OnProvinceEnter += OnProvinceEnter;
     }
 
     void OnDisable()
     {
         GameEvents.OnBarrackMenuOpened -= OpenBarracksMenu;
         GameEvents.OnCityCenterExit -= CloseBarracksMenu;
-        GameEvents.OnProvinceEnter -= (ProvinceModel province) => currentProvince = province;
+        GameEvents.OnProvinceEnter -= OnProvinceEnter;
     }
+
+    private void OnProvinceEnter(ProvinceModel province) => currentProvince = province;
 
     private void OpenBarracksMenu()
     {

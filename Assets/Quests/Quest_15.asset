@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_15
   m_EditorClassIdentifier: 
   questId: 14
-  questTitle: Field a host.
-  questDescription: Field an army of 150 total soldiers.
-  questType: 10
-  targetCount: 150
-  rewardType: 3
-  rewardAmount: 150
-  rewardDescription: Gain a new general to lead your armies.
+  questTitle: Headhunter
+  questDescription: Capture {target} enemy commanders.
+  questType: 12
+  targetCount: 3
+  useDynamicStartingTarget: 0
+  requiredBuildingType: 
+  rewardType: 0
+  rewardAmount: 200
+  goldRewardIncomeTurns: 1.5
+  rewardDescription: '{gold} gold'
   prerequisiteQuestId: 13

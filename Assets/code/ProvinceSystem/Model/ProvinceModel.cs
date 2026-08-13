@@ -33,9 +33,9 @@ public class ProvinceModel : MonoBehaviour
     public void SwitchSprites(ProvinceModel capitalProvince)
     {
         CityCenter cityCenter = GetComponentInChildren<CityCenter>();
-        if (cityCenter != null && capitalProvince == this)
+        if (cityCenter != null)
         {
-            cityCenter.SwitchSprites();
+            cityCenter.SetCapitalVisual(capitalProvince == this);
         }
     }
 

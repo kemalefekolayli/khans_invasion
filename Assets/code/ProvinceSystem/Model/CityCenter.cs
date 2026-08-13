@@ -102,6 +102,11 @@ public class CityCenter : MonoBehaviour
 
     public void SwitchSprites()
     {
+        SetCapitalVisual(currentState != SpriteState.Otag);
+    }
+
+    public void SetCapitalVisual(bool isCapital)
+    {
         if (spriteRenderer == null) return;
         if (UsesByzantineVisuals())
         {
@@ -109,17 +114,17 @@ public class CityCenter : MonoBehaviour
             return;
         }
 
-        if (currentState == SpriteState.Otag)
-        {
-            currentState = SpriteState.Star;
-            spriteRenderer.sprite = starSprite;
-            transform.localScale = new Vector3(0.05f, 0.05f, 1f);
-        }
-        else
+        if (isCapital)
         {
             currentState = SpriteState.Otag;
             spriteRenderer.sprite = otagSprite;
             transform.localScale = new Vector3(0.02f, 0.02f, 1f);
+        }
+        else if (currentState == SpriteState.Otag)
+        {
+            currentState = SpriteState.Star;
+            spriteRenderer.sprite = starSprite;
+            transform.localScale = new Vector3(0.05f, 0.05f, 1f);
         }
 
         spriteRenderer.color = Color.white;

@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_12
   m_EditorClassIdentifier: 
   questId: 11
-  questTitle: Great conqueror.
-  questDescription: Conquer ten enemy provinces.
+  questTitle: First Conquests
+  questDescription: Conquer {target} provinces.
   questType: 2
-  targetCount: 10
-  rewardType: 3
+  targetCount: 3
+  useDynamicStartingTarget: 0
+  requiredBuildingType: 
+  rewardType: 0
   rewardAmount: 100
-  rewardDescription: Gain a new general to lead your armies.
-  prerequisiteQuestId: 2
+  goldRewardIncomeTurns: 1
+  rewardDescription: '{gold} gold'
+  prerequisiteQuestId: 10

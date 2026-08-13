@@ -30,6 +30,8 @@ public class QuestPanelController : MonoBehaviour
     private Sprite whiteSprite;
     private readonly List<QuestItemUI> questItems = new List<QuestItemUI>();
     private readonly List<ConnectorData> connectors = new List<ConnectorData>();
+    private float actualTreeWidth;
+    private float horizontalLayoutOffset;
     
     private struct ConnectorData
     {
@@ -147,7 +149,10 @@ public class QuestPanelController : MonoBehaviour
             }
         }
         
-        float contentWidth = nodeWidth + Mathf.Max(0, leafCount - 1) * columnSpacing + treePadding * 2f;
+        Canvas.ForceUpdateCanvases();
+        actualTreeWidth = nodeWidth + Mathf.Max(0, leafCount - 1) * columnSpacing + treePadding * 2f;
+        float contentWidth = Mathf.Max(actualTreeWidth, GetViewportWidth());
+        horizontalLayoutOffset = (contentWidth - actualTreeWidth) * 0.5f;
         float contentHeight = nodeHeight + maxDepth * rowSpacing + treePadding * 2f;
         treeContent.sizeDelta = new Vector2(contentWidth, contentHeight);
         
@@ -192,7 +197,41 @@ public class QuestPanelController : MonoBehaviour
     
     private float ColumnX(float column)
     {
-        return treePadding + nodeWidth * 0.5f + column * columnSpacing;
+        return horizontalLayoutOffset + treePadding + nodeWidth * 0.5f + column * columnSpacing;
+    }
+
+    private float GetViewportWidth()
+    {
+        if (questScrollRect == null) return 0f;
+
+        RectTransform viewport = questScrollRect.viewport != null
+            ? questScrollRect.viewport
+            : questScrollRect.GetComponent<RectTransform>();
+        float width = viewport != null ? viewport.rect.width : 0f;
+        return float.IsNaN(width) || float.IsInfinity(width) ? 0f : Mathf.Max(0f, width);
+    }
+
+    private void RefreshHorizontalCentering()
+    {
+        if (treeContent == null || actualTreeWidth <= 0f) return;
+
+        Canvas.ForceUpdateCanvases();
+        float contentWidth = Mathf.Max(actualTreeWidth, GetViewportWidth());
+        float newOffset = (contentWidth - actualTreeWidth) * 0.5f;
+        float offsetDelta = newOffset - horizontalLayoutOffset;
+
+        treeContent.sizeDelta = new Vector2(contentWidth, treeContent.sizeDelta.y);
+        if (Mathf.Abs(offsetDelta) > 0.01f)
+        {
+            for (int i = 0; i < treeContent.childCount; i++)
+            {
+                RectTransform child = treeContent.GetChild(i) as RectTransform;
+                if (child == null || child.gameObject == questItemTemplate) continue;
+                child.anchoredPosition += new Vector2(offsetDelta, 0f);
+            }
+        }
+
+        horizontalLayoutOffset = newOffset;
     }
     
     private float RowY(int depth)
@@ -392,6 +431,8 @@ public class QuestPanelController : MonoBehaviour
             
             if (questItems.Count == 0)
                 InitializeQuestItems();
+
+            RefreshHorizontalCentering();
             
             // Refresh all quest states
             foreach (var item in questItems)
@@ -436,7 +477,7 @@ public class QuestPanelController : MonoBehaviour
         if (questScrollRect != null)
         {
             questScrollRect.verticalNormalizedPosition = 1f;
-            questScrollRect.horizontalNormalizedPosition = 0f;
+            questScrollRect.horizontalNormalizedPosition = 0.5f;
         }
     }
 }

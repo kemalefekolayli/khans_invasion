@@ -13,6 +13,13 @@ public class NationController : MonoBehaviour
     [Min(0f)] [SerializeField] private float ownedNeighborWeight = 20f;
     [Min(0f)] [SerializeField] private float connectedRegionWeight = 5f;
 
+    [Header("Capital Population")]
+    [SerializeField, Min(0f)] private float minimumCapitalPopulation = 2000f;
+
+    [Header("Initial Capital Population")]
+    [SerializeField, Min(0f)] private float initialPlayerCapitalPopulation = 200f;
+    [SerializeField, Min(0f)] private float initialAICapitalPopulation = 500f;
+
     private NationCapitalRegistry capitalRegistry;
 
     private void OnEnable()
@@ -35,10 +42,20 @@ public class NationController : MonoBehaviour
         }
 
         nation.capitalProvince = capitalProvince;
+        bool capacityChanged = EnsureCapitalCapacity(capitalProvince);
         EnsureCapitalFortress(capitalProvince);
 
         if (nation.isPlayer)
         {
+            if (capacityChanged)
+            {
+                PlayerNation player = PlayerNation.Instance;
+                if (player != null && player.currentNation == nation)
+                    player.RecalculateStats();
+                else
+                    GameEvents.PlayerStatsChanged();
+            }
+
             GameEvents.PlayerCapitalSet(capitalProvince);
         }
     }
@@ -49,13 +66,36 @@ public class NationController : MonoBehaviour
         if (loader == null) return;
 
         capitalRegistry = Resources.Load<NationCapitalRegistry>(CapitalRegistryResourceName);
+        PlayerNation player = PlayerNation.Instance;
+        bool playerPopulationChanged = false;
         foreach (NationModel nation in loader.allNations)
         {
             if (nation == null || nation.provinceList == null || nation.provinceList.Count == 0) continue;
 
             ProvinceModel configuredCapital = FindConfiguredCapital(nation);
-            SetNationCapital(nation, configuredCapital ?? SelectBestCapital(nation));
+            ProvinceModel initialCapital = configuredCapital ?? SelectBestCapital(nation);
+            SetNationCapital(nation, initialCapital);
+
+            if (initialCapital != null)
+            {
+                bool isStartingPlayerNation = player != null
+                    && (player.currentNation == nation || nation.nationId == player.startingNationId);
+                float initialPopulation = isStartingPlayerNation
+                    ? initialPlayerCapitalPopulation
+                    : initialAICapitalPopulation;
+
+                if (!Mathf.Approximately(initialCapital.provinceCurrentPop, initialPopulation))
+                {
+                    initialCapital.provinceCurrentPop = initialPopulation;
+                    playerPopulationChanged |= isStartingPlayerNation;
+                }
+            }
         }
+
+        // PlayerNation normally initializes after this callback. Refresh only when it
+        // was already initialized before capital normalization.
+        if (playerPopulationChanged && player != null && player.currentNation != null)
+            player.RecalculateStats();
     }
 
     private void OnProvinceOwnerChanged(ProvinceModel province, NationModel oldOwner, NationModel newOwner)
@@ -151,5 +191,19 @@ public class NationController : MonoBehaviour
 
         capital.buildings.Add(FortressBuilding);
         GameEvents.BuildingConstructed(capital, FortressBuilding);
+    }
+
+    private bool EnsureCapitalCapacity(ProvinceModel capital)
+    {
+        if (capital == null) return false;
+
+        bool changed = false;
+        if (capital.provinceMaxPop < minimumCapitalPopulation)
+        {
+            capital.provinceMaxPop = minimumCapitalPopulation;
+            changed = true;
+        }
+
+        return changed;
     }
 }

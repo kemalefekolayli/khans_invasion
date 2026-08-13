@@ -27,8 +27,11 @@ public class Builder : MonoBehaviour
     
     [Header("Debug")]
     [SerializeField] private bool logBuilding = false;
+    [Header("Player Progression Modifiers")]
+    [SerializeField, Range(0f, 1f)] private float playerBuildingCostReduction = 0f;
     
     public static Builder Instance { get; private set; }
+    public float PlayerBuildingCostReduction => playerBuildingCostReduction;
     
     private void Awake()
     {
@@ -55,7 +58,7 @@ public class Builder : MonoBehaviour
         }
         
         // Check cost
-        float cost = GetBuildingCost(buildingType);
+        float cost = GetEffectiveBuildingCost(province, buildingType);
         if (availableGold < cost)
         {
             if (logBuilding)
@@ -95,7 +98,7 @@ public class Builder : MonoBehaviour
             return -1f;
         }
         
-        float cost = GetBuildingCost(buildingType);
+        float cost = GetEffectiveBuildingCost(province, buildingType);
         
         // Add to building list
         province.buildings.Add(buildingType);
@@ -126,6 +129,24 @@ public class Builder : MonoBehaviour
             GameEvents.RecordCityOperation(playerNation, province, CityOperationType.Building, selectedGeneral);
         
         return cost;
+    }
+
+    public float GetPlayerBuildingCost(string buildingType)
+    {
+        return GetBuildingCost(buildingType) * (1f - playerBuildingCostReduction);
+    }
+
+    public void AddPlayerBuildingCostReductionPercent(float percent)
+    {
+        playerBuildingCostReduction = Mathf.Clamp01(playerBuildingCostReduction + percent / 100f);
+        GameEvents.PlayerStatsChanged();
+    }
+
+    private float GetEffectiveBuildingCost(ProvinceModel province, string buildingType)
+    {
+        return province != null && province.provinceOwner == PlayerNation.Instance?.currentNation
+            ? GetPlayerBuildingCost(buildingType)
+            : GetBuildingCost(buildingType);
     }
     
     /// <summary>
@@ -208,6 +229,11 @@ public class Builder : MonoBehaviour
             costs["Housing"] = housingCost;
         }
         
+        if (playerBuildingCostReduction > 0f)
+        {
+            List<string> keys = new List<string>(costs.Keys);
+            foreach (string key in keys) costs[key] *= 1f - playerBuildingCostReduction;
+        }
         return costs;
     }
     
@@ -226,7 +252,7 @@ public class Builder : MonoBehaviour
         }
         
         // Fallback descriptions
-        float cost = GetBuildingCost(buildingType);
+        float cost = GetPlayerBuildingCost(buildingType);
         string desc = buildingType switch
         {
             "Fortress" => $"+{fortressDefenseBonus} defense, +{fortressDefenseStr} strength",

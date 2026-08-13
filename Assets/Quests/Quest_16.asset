@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_16
   m_EditorClassIdentifier: 
   questId: 15
-  questTitle: Master of sieges.
-  questDescription: Successfully siege five fortresses.
+  questTitle: Master of Sieges
+  questDescription: Take over {target} fortress provinces.
   questType: 4
   targetCount: 5
-  rewardType: 0
-  rewardAmount: 300
-  rewardDescription: Gain 300 gold.
-  prerequisiteQuestId: 4
+  useDynamicStartingTarget: 0
+  requiredBuildingType: 
+  rewardType: 6
+  rewardAmount: 20
+  goldRewardIncomeTurns: 2
+  rewardDescription: +20% supply capacity and {gold} gold
+  prerequisiteQuestId: 14

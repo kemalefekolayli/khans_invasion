@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_3
   m_EditorClassIdentifier: 
   questId: 2
-  questTitle: Conqueror 3 provinces.
-  questDescription: Siege and conqueror three enemy provinces.
-  questType: 2
-  targetCount: 3
-  rewardType: 2
-  rewardAmount: 25
-  rewardDescription: Gain +25 trade income.
+  questTitle: Local Works
+  questDescription: Build {target} buildings.
+  questType: 1
+  targetCount: 5
+  useDynamicStartingTarget: 0
+  requiredBuildingType: 
+  rewardType: 0
+  rewardAmount: 50
+  goldRewardIncomeTurns: 0.75
+  rewardDescription: '{gold} gold'
   prerequisiteQuestId: 1

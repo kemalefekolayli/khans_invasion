@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_1
   m_EditorClassIdentifier: 
   questId: 0
-  questTitle: Raid 3 Provinces.
-  questDescription: Raid three enemy provinces.
-  questType: 0
+  questTitle: Lay the Foundations
+  questDescription: Build in {target} distinct provinces.
+  questType: 11
   targetCount: 3
+  useDynamicStartingTarget: 0
+  requiredBuildingType: 
   rewardType: 0
-  rewardAmount: 100
-  rewardDescription: Gain 100 gold.
+  rewardAmount: 25
+  goldRewardIncomeTurns: 0.5
+  rewardDescription: '{gold} gold'
   prerequisiteQuestId: -1

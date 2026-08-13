@@ -38,6 +38,11 @@ public class MapModeController : MonoBehaviour
         }
 
         Instance = this;
+
+        if (GetComponent<MapModeChangePopup>() == null)
+        {
+            gameObject.AddComponent<MapModeChangePopup>();
+        }
     }
 
     private void Start()

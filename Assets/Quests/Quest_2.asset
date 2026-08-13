@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_2
   m_EditorClassIdentifier: 
   questId: 1
-  questTitle: Build 5 buildings.
-  questDescription: Build five buildings on your provinces.
-  questType: 1
-  targetCount: 5
-  rewardType: 1
-  rewardAmount: 25
-  rewardDescription: Gain +25 max pop cap in ALL your provinces.
+  questTitle: Steady Revenue
+  questDescription: Reach {target} income per turn.
+  questType: 7
+  targetCount: 50
+  useDynamicStartingTarget: 0
+  requiredBuildingType: 
+  rewardType: 2
+  rewardAmount: 50
+  goldRewardIncomeTurns: 0.5
+  rewardDescription: +50 trade income and {gold} gold
   prerequisiteQuestId: 0

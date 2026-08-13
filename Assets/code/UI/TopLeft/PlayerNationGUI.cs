@@ -15,6 +15,7 @@ public class PlayerNationGUI : MonoBehaviour
     public TextMeshProUGUI tradeText;       // Trade income per turn
     public TextMeshProUGUI populationText;  // Total population
     public TextMeshProUGUI armySizeText;    // Army size
+    public TextMeshProUGUI forceLimitText;  // Current soldiers / force limit
     public TextMeshProUGUI armyStrText;     // Army strength
     public TextMeshProUGUI cityCountText;   // Number of cities
     public TextMeshProUGUI turnCountText;   // Current turn
@@ -61,7 +62,7 @@ public class PlayerNationGUI : MonoBehaviour
     private void Start()
     {
         FindTextReferences();
-        UpdateCharismaDisplay();
+        UpdateGUI();
     }
 
     private void OnPlayerNationReady()
@@ -141,6 +142,9 @@ public class PlayerNationGUI : MonoBehaviour
         
         if (armySizeText == null)
             armySizeText = FindTextByName("ArmySizeText");
+
+        if (forceLimitText == null)
+            forceLimitText = FindTextByName("ForceLimitText");
         
         if (armyStrText == null)
             armyStrText = FindTextByName("ArmyStrText");
@@ -188,6 +192,10 @@ public class PlayerNationGUI : MonoBehaviour
         
         if (playerNation.currentNation == null)
             return;
+
+        MilitaryEconomy militaryEconomy = MilitaryEconomy.Instance;
+        if (militaryEconomy == null)
+            militaryEconomy = FindFirstObjectByType<MilitaryEconomy>();
         
         // Nation name
         if (nationNameText != null)
@@ -196,8 +204,9 @@ public class PlayerNationGUI : MonoBehaviour
         // Gold with pending income
         if (goldText != null)
         {
-            float totalIncome = playerNation.TotalIncome;
-            goldText.text = FormatWithPending(playerNation.nationMoney, totalIncome);
+            float maintenance = militaryEconomy != null ? militaryEconomy.CurrentMaintenanceCost : 0f;
+            float netNextTurnChange = playerNation.TotalIncome - maintenance;
+            goldText.text = FormatWithPending(playerNation.nationMoney, netNextTurnChange);
         }
         
         // Tax - show current + change from start of turn
@@ -235,6 +244,12 @@ public class PlayerNationGUI : MonoBehaviour
         // Army size
         if (armySizeText != null)
             armySizeText.text = FormatNumber(playerNation.ArmySize);
+
+        // Force capacity
+        if (forceLimitText != null)
+            forceLimitText.text = militaryEconomy != null
+                ? $"{FormatNumber(militaryEconomy.CurrentSoldiers)}/{FormatNumber(militaryEconomy.ForceLimit)}"
+                : "0/0";
         
         // Army strength
         if (armyStrText != null)

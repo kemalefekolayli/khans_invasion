@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_13
   m_EditorClassIdentifier: 
   questId: 12
-  questTitle: Legendary warlord.
-  questDescription: Defeat ten enemy armies in battle.
-  questType: 3
-  targetCount: 10
-  rewardType: 0
-  rewardAmount: 300
-  rewardDescription: Gain 300 gold.
-  prerequisiteQuestId: 3
+  questTitle: Break the Walls
+  questDescription: Take over {target} fortress province.
+  questType: 4
+  targetCount: 1
+  useDynamicStartingTarget: 0
+  requiredBuildingType: 
+  rewardType: 5
+  rewardAmount: 1
+  goldRewardIncomeTurns: 1
+  rewardDescription: +1 general limit and {gold} gold
+  prerequisiteQuestId: 11

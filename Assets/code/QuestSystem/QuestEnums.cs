@@ -10,7 +10,10 @@ public enum QuestType
     ReachIncome,
     ReachTotalPopulation,
     RecruitTroops,
-    ReachArmySize
+    ReachArmySize,
+    BuildInDistinctProvinces,
+    CaptureEnemyCommanders,
+    ReachCharisma
 }
 
 public enum RewardType
@@ -19,5 +22,11 @@ public enum RewardType
     PopulationCapacity,
     TradeIncome,
     NewGeneral,
-    MoveCapitalAbility
+    MoveCapitalAbility,
+    GeneralLimitFlat,
+    SupplyCapacityPercent,
+    FriendlySupplyCostReductionPercent,
+    CargoSupplyCostMultiplier,
+    BuildingCostReductionPercent,
+    PlayerDiceFlatBonus
 }

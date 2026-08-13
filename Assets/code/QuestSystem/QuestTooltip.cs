@@ -149,7 +149,9 @@ public class QuestTooltip : MonoBehaviour
         
         if (descriptionText != null)
         {
-            descriptionText.text = currentQuest.questDescription;
+            descriptionText.text = QuestManager.Instance != null
+                ? QuestManager.Instance.GetCurrentDisplayDescription(currentQuest.questId)
+                : currentQuest.questDescription;
         }
         
         if (progressText != null)
@@ -167,7 +169,10 @@ public class QuestTooltip : MonoBehaviour
         
         if (rewardText != null)
         {
-            rewardText.text = $"Reward: {currentQuest.rewardDescription}";
+            string reward = QuestManager.Instance != null
+                ? QuestManager.Instance.GetCurrentRewardDescription(currentQuest.questId)
+                : currentQuest.rewardDescription;
+            rewardText.text = $"Reward: {reward}";
         }
     }
 

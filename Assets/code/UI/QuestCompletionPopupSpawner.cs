@@ -34,6 +34,7 @@ public class QuestCompletionPopupSpawner : MonoBehaviour
     private readonly Queue<string> pendingMessages = new Queue<string>();
     private bool showing;
     private Sprite whiteSprite;
+    private QuestManager boundManager;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void EnsureRuntimeInstance()
@@ -53,26 +54,49 @@ public class QuestCompletionPopupSpawner : MonoBehaviour
         }
 
         Instance = this;
+        DontDestroyOnLoad(gameObject);
         BuildCanvas();
         pool = new ComponentPool<QuestCompletionBanner>("QuestCompletionBannerPool", canvas.transform, poolSize, CreateBanner);
     }
 
     private void OnEnable()
     {
-        if (QuestManager.Instance != null)
-        {
-            QuestManager.Instance.OnQuestCompleted += OnQuestCompleted;
-            QuestManager.Instance.OnQuestClaimed += OnQuestClaimed;
-        }
+        TryBindManager();
     }
 
     private void OnDisable()
     {
-        if (QuestManager.Instance != null)
-        {
-            QuestManager.Instance.OnQuestCompleted -= OnQuestCompleted;
-            QuestManager.Instance.OnQuestClaimed -= OnQuestClaimed;
-        }
+        UnbindManager();
+    }
+
+    private void Update()
+    {
+        if (boundManager == QuestManager.Instance) return;
+        UnbindManager();
+        TryBindManager();
+    }
+
+    private void OnDestroy()
+    {
+        UnbindManager();
+        if (Instance == this) Instance = null;
+    }
+
+    private void TryBindManager()
+    {
+        QuestManager manager = QuestManager.Instance;
+        if (manager == null || manager == boundManager) return;
+        boundManager = manager;
+        boundManager.OnQuestCompleted += OnQuestCompleted;
+        boundManager.OnQuestClaimed += OnQuestClaimed;
+    }
+
+    private void UnbindManager()
+    {
+        if (boundManager == null) return;
+        boundManager.OnQuestCompleted -= OnQuestCompleted;
+        boundManager.OnQuestClaimed -= OnQuestClaimed;
+        boundManager = null;
     }
 
     private void OnQuestCompleted(int questId)
@@ -80,16 +104,16 @@ public class QuestCompletionPopupSpawner : MonoBehaviour
         QuestData quest = GetQuest(questId);
         if (quest == null) return;
 
-        string reward = string.IsNullOrEmpty(quest.rewardDescription) ? string.Empty : $" — Reward: {quest.rewardDescription}";
-        Enqueue($"Quest Complete! {quest.questTitle}{reward}");
+        Enqueue($"Quest complete - claim your prize! {quest.questTitle}");
     }
 
     private void OnQuestClaimed(int questId)
     {
         QuestData quest = GetQuest(questId);
-        if (quest == null || string.IsNullOrEmpty(quest.rewardDescription)) return;
+        string rewardDescription = QuestManager.Instance?.GetCurrentRewardDescription(questId) ?? quest?.rewardDescription;
+        if (quest == null || string.IsNullOrEmpty(rewardDescription)) return;
 
-        Enqueue($"Reward Claimed! {quest.rewardDescription}");
+        Enqueue($"Reward Claimed! {rewardDescription}");
     }
 
     private QuestData GetQuest(int questId)

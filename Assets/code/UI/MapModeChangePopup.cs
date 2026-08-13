@@ -12,12 +12,6 @@ public class MapModeChangePopup : MonoBehaviour
     private RectTransform popupRect;
     private Coroutine animationRoutine;
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void EnsureInstance()
-    {
-        new GameObject("MapModeChangePopupBootstrap").AddComponent<MapModeChangePopupBootstrap>();
-    }
-
     private void Awake() => CreatePopup();
 
     private void OnEnable()
@@ -61,7 +55,7 @@ public class MapModeChangePopup : MonoBehaviour
         popupText.outlineColor = Color.black;
         popupText.outlineWidth = 0.22f;
         popupText.raycastTarget = false;
-        popupText.enableWordWrapping = false;
+        popupText.textWrappingMode = TextWrappingModes.NoWrap;
         GameFontManager.Apply(popupText);
         popupText.gameObject.SetActive(false);
     }
@@ -95,19 +89,5 @@ public class MapModeChangePopup : MonoBehaviour
     private static string GetModeLabel(ProvinceMapMode mode)
     {
         return mode == ProvinceMapMode.PopulationDensity ? "Population" : mode.ToString();
-    }
-}
-
-internal class MapModeChangePopupBootstrap : MonoBehaviour
-{
-    private void Update()
-    {
-        MapModeController controller = FindFirstObjectByType<MapModeController>();
-        if (controller == null) return;
-
-        if (controller.GetComponent<MapModeChangePopup>() == null)
-            controller.gameObject.AddComponent<MapModeChangePopup>();
-
-        Destroy(gameObject);
     }
 }

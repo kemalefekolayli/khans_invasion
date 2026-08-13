@@ -172,17 +172,16 @@ public class General : MonoBehaviour
     /// </summary>
     public void DepositLootToTreasury()
     {
-        if (carriedLoot <= 0) return;
-        
-        if (PlayerNation.Instance != null)
-        {
-            PlayerNation.Instance.nationMoney += carriedLoot;
-            GameLog.Log(GameLogCategory.Core, $"[General] {data.generalName} deposited {carriedLoot:F0} loot to treasury");
-            carriedLoot = 0f;
-            GameEvents.GeneralLootChanged(this);
-            
-            GameEvents.PlayerStatsChanged();
-        }
+        DepositLootToTreasury(out _);
+    }
+
+    /// <summary>
+    /// Safely deposit all carried loot when this is the selected player general at
+    /// the player capital. Returns whether a deposit occurred and its exact amount.
+    /// </summary>
+    public bool DepositLootToTreasury(out float depositedAmount)
+    {
+        return CapitalLootDepositPolicy.TryDeposit(this, out depositedAmount);
     }
     
     /// <summary>

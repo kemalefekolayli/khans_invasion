@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_10
   m_EditorClassIdentifier: 
   questId: 9
-  questTitle: Fearless raiders.
-  questDescription: Raid ten enemy provinces.
-  questType: 0
-  targetCount: 10
+  questTitle: Raise the Banners
+  questDescription: Recruit {target} troops.
+  questType: 9
+  targetCount: 100
+  useDynamicStartingTarget: 0
+  requiredBuildingType: 
   rewardType: 0
-  rewardAmount: 250
-  rewardDescription: Gain 250 gold.
+  rewardAmount: 50
+  goldRewardIncomeTurns: 0.5
+  rewardDescription: '{gold} gold'
   prerequisiteQuestId: 0

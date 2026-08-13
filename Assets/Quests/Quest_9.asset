@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_9
   m_EditorClassIdentifier: 
   questId: 8
-  questTitle: Growing realm.
-  questDescription: Reach a total population of 800 across your provinces.
-  questType: 8
-  targetCount: 800
-  rewardType: 1
-  rewardAmount: 40
-  rewardDescription: Gain +40 max pop cap in ALL your provinces.
+  questTitle: Imperial Treasury
+  questDescription: Reach {target} income per turn.
+  questType: 7
+  targetCount: 250
+  useDynamicStartingTarget: 0
+  requiredBuildingType: 
+  rewardType: 0
+  rewardAmount: 400
+  goldRewardIncomeTurns: 3
+  rewardDescription: '{gold} gold'
   prerequisiteQuestId: 7

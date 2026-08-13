@@ -82,11 +82,16 @@ public class GetArmyButton : MonoBehaviour
         // Check if we can recruit the full amount (need at least 200 left after recruiting)
         float maxCanRecruit = province.provinceCurrentPop - minPopulationRequired;
         float actualRecruit = Mathf.Min(troopsToRecruit, maxCanRecruit);
+
+        actualRecruit = MilitaryEconomy.GetOrCreate().ClampNewSoldiers(actualRecruit, "Troop recruitment");
         
         if (actualRecruit <= 0)
         {
-            GameLog.Warning(GameLogCategory.Core, $"[GetArmyButton] Cannot recruit - would leave province with less than {minPopulationRequired} population");
-            SpawnPopup(province.transform.position, "Not enough\npopulation!", new Color(1f, 0.5f, 0f));
+            if (maxCanRecruit <= 0f)
+            {
+                GameLog.Warning(GameLogCategory.Core, $"[GetArmyButton] Cannot recruit - would leave province with less than {minPopulationRequired} population");
+                SpawnPopup(province.transform.position, "Not enough\npopulation!", new Color(1f, 0.5f, 0f));
+            }
             return;
         }
         
@@ -112,6 +117,8 @@ public class GetArmyButton : MonoBehaviour
             // Create a new army for this general
             CreateNewArmyForGeneral(general, selected, actualRecruit);
         }
+
+        GameEvents.PlayerTroopsRecruited(general.CommandedArmy, actualRecruit);
         
         // Update player stats
         PlayerNation.Instance?.RecalculateStats();

@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_7
   m_EditorClassIdentifier: 
   questId: 6
-  questTitle: Amass a fortune.
-  questDescription: Amass 300 gold in your treasury.
-  questType: 6
-  targetCount: 300
-  rewardType: 0
-  rewardAmount: 150
-  rewardDescription: Gain 150 gold.
-  prerequisiteQuestId: 0
+  questTitle: Master Builders
+  questDescription: Build {target} buildings.
+  questType: 1
+  targetCount: 15
+  useDynamicStartingTarget: 0
+  requiredBuildingType: 
+  rewardType: 9
+  rewardAmount: 15
+  goldRewardIncomeTurns: 2
+  rewardDescription: 15% lower building costs and {gold} gold
+  prerequisiteQuestId: 5

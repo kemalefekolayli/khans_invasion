@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class BuilderOverlayController : MonoBehaviour 
 {
@@ -37,9 +38,30 @@ public class BuilderOverlayController : MonoBehaviour
         GameEvents.OnBarrackMenuOpened -= OnBarrackMenuOpened;
     }
 
-    private void Start()
+    private void Awake()
     {
+        DisableDecorativeOverlayRaycasts();
         HideAllOverlays();
+    }
+
+    private void DisableDecorativeOverlayRaycasts()
+    {
+        DisableGraphicRaycasts(overlay_farm);
+        DisableGraphicRaycasts(overlay_barrack);
+        DisableGraphicRaycasts(overlay_barrack2);
+        DisableGraphicRaycasts(overlay_fort);
+        DisableGraphicRaycasts(overlay_fort2);
+        DisableGraphicRaycasts(overlay_house);
+        DisableGraphicRaycasts(overlay_house2);
+        DisableGraphicRaycasts(overlay_trade);
+    }
+
+    private static void DisableGraphicRaycasts(GameObject overlay)
+    {
+        if (overlay == null) return;
+
+        foreach (Graphic graphic in overlay.GetComponentsInChildren<Graphic>(true))
+            graphic.raycastTarget = false;
     }
 
     private void OnProvinceOpened(ProvinceModel province)

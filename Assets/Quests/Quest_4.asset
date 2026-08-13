@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_4
   m_EditorClassIdentifier: 
   questId: 3
-  questTitle: Defeat 3 armies.
-  questDescription: Defeat three enemy armies.
-  questType: 3
+  questTitle: Granaries and Markets
+  questDescription: Build {target} Farms.
+  questType: 1
   targetCount: 3
-  rewardType: 3
-  rewardAmount: 0
-  rewardDescription: Gain a new general to lead your armies.
+  useDynamicStartingTarget: 0
+  requiredBuildingType: Farm
+  rewardType: 9
+  rewardAmount: 10
+  goldRewardIncomeTurns: 1
+  rewardDescription: 10% lower building costs and {gold} gold
   prerequisiteQuestId: 2

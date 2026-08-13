@@ -61,6 +61,7 @@ public class GameManager : MonoBehaviour
         if (topLeftGUIPrefab != null)
         {
             currentGUI = Instantiate(topLeftGUIPrefab);
+            RuntimeScreenCanvasPolicy.Apply(currentGUI, new Vector2(1920f, 1080f), 0.5f);
         }
 
         capitalTransform = currentMap.transform.Find(capitalProvinceObjectName);
@@ -85,9 +86,15 @@ public class GameManager : MonoBehaviour
             if (interactionButtonPrefab != null)
             {
                 interactionGUI = Instantiate(interactionButtonPrefab);
+                RuntimeScreenCanvasPolicy.Apply(interactionGUI, new Vector2(1920f, 1080f), 0.5f);
+                CapitalLootDepositController depositController = interactionGUI.GetComponent<CapitalLootDepositController>();
+                if (depositController == null)
+                    depositController = interactionGUI.AddComponent<CapitalLootDepositController>();
+                depositController.Initialize(interactionGUI);
             }
         }
 
+        GetComponent<RuntimeUIInstaller>()?.Install();
         Invoke(nameof(FireMapLoadedEvent), 0.5f);
     }
 
@@ -112,6 +119,10 @@ public class GameManager : MonoBehaviour
         ProvinceModel prefabCapital = playerNation.capitalProvince;
         if (prefabCapital != null)
         {
+            // Capitals can be assigned before PlayerNation marks its nation as player-owned.
+            // Re-applying the same capital is idempotent and emits the player visual event now
+            // that the player nation is fully initialized.
+            nationController?.SetNationCapital(playerNation, prefabCapital);
             MovePlayerToCapital(prefabCapital);
             return;
         }

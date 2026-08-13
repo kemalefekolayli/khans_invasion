@@ -13,11 +13,14 @@ MonoBehaviour:
   m_Name: Quest_8
   m_EditorClassIdentifier: 
   questId: 7
-  questTitle: Steady income.
-  questDescription: Reach a per-turn income of 50 gold.
+  questTitle: Prosperous Realm
+  questDescription: Reach {target} income per turn.
   questType: 7
-  targetCount: 50
-  rewardType: 2
-  rewardAmount: 30
-  rewardDescription: Gain +30 trade income.
+  targetCount: 175
+  useDynamicStartingTarget: 0
+  requiredBuildingType: 
+  rewardType: 0
+  rewardAmount: 250
+  goldRewardIncomeTurns: 2
+  rewardDescription: '{gold} gold'
   prerequisiteQuestId: 6

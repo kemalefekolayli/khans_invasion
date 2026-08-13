@@ -428,6 +428,10 @@ MonoBehaviour:
   zoomSpeed: 20
   minZoom: 3
   maxZoom: 15
+  minWorldX: -32.5
+  maxWorldX: 43
+  minWorldY: -20.5
+  maxWorldY: 31.5
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0
@@ -852,7 +856,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   startButton: {fileID: 1756801211}
   quitButton: {fileID: 0}
-  gameSceneName: GameScene
+  gameSceneName: LoadingScene
   backgroundRenderer: {fileID: 0}
   fadeTime: 0.5
   fadePanel: {fileID: 0}
@@ -890,7 +894,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 6.18, y: 0}
+  m_AnchoredPosition: {x: 6.1800003, y: 0}
   m_SizeDelta: {x: -12.36, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1910923703

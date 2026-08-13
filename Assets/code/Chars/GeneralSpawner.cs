@@ -4,7 +4,7 @@ public class GeneralSpawner : MonoBehaviour
 {
     [Header("Spawn Settings")]
     [SerializeField] private GameObject generalPrefab;
-    [SerializeField] private int extraGeneralCount = 1;
+    [SerializeField] private int extraGeneralCount = 0;
     [SerializeField] private Vector3 spawnOffset = new Vector3(-3f, 0, 0);
     
     [Header("Army Settings")]
@@ -58,7 +58,8 @@ public class GeneralSpawner : MonoBehaviour
             Vector3 spawnPos = khanPosition + spawnOffset * (i + 1);
             string generalName = GetRandomName();
             
-            SpawnGeneral(spawnPos, generalName, startingArmySize);
+            if (!TrySpawnGeneral(spawnPos, generalName, startingArmySize))
+                break;
         }
     }
     
@@ -84,11 +85,35 @@ public class GeneralSpawner : MonoBehaviour
         Vector3 spawnPos = khan.transform.position + spawnOffset;
         float size = armySize > 0 ? armySize : startingArmySize;
         
-        SpawnGeneral(spawnPos, generalName, size);
+        TrySpawnGeneral(spawnPos, generalName, size);
+    }
+
+    public bool TrySpawnFreeGeneral()
+    {
+        if (generalPrefab == null)
+        {
+            GameLog.Error(GameLogCategory.Core, "[GeneralSpawner] General prefab not assigned!");
+            return false;
+        }
+
+        SelectableGeneral khan = SelectableGeneral.FindKhan();
+        if (khan == null)
+        {
+            GameLog.Error(GameLogCategory.Core, "[GeneralSpawner] Khan not found!");
+            return false;
+        }
+
+        return TrySpawnGeneral(khan.transform.position + spawnOffset, GetRandomName(), startingArmySize);
     }
     
-    private void SpawnGeneral(Vector3 position, string generalName, float armySize)
+    private bool TrySpawnGeneral(Vector3 position, string generalName, float requestedArmySize)
     {
+        MilitaryEconomy militaryEconomy = MilitaryEconomy.GetOrCreate();
+        if (!militaryEconomy.CanCreateGeneral()) return false;
+
+        float armySize = militaryEconomy.ClampNewSoldiers(requestedArmySize, "General recruitment");
+        if (armySize <= 0f) return false;
+
         GameObject generalObj = Instantiate(generalPrefab, position, Quaternion.identity);
         generalObj.name = $"General_{generalName}";
         
@@ -106,12 +131,17 @@ public class GeneralSpawner : MonoBehaviour
         }
         general.Initialize(generalName, false);
         
-        SpawnArmyForGeneral(general, generalName, armySize);
+        if (!SpawnArmyForGeneral(general, generalName, armySize))
+        {
+            Destroy(generalObj);
+            return false;
+        }
         
         GameLog.Log(GameLogCategory.Core, $"✓ [GeneralSpawner] Spawned general: {generalName} at {position}");
+        return true;
     }
     
-    private void SpawnArmyForGeneral(General general, string generalName, float armySize)
+    private bool SpawnArmyForGeneral(General general, string generalName, float armySize)
     {
         ArmyFactory factory = ArmyFactory.Instance;
         if (factory == null)
@@ -122,7 +152,7 @@ public class GeneralSpawner : MonoBehaviour
         if (factory == null)
         {
             GameLog.Error(GameLogCategory.Core, "[GeneralSpawner] ArmyFactory not found!");
-            return;
+            return false;
         }
         
         ArmyData armyData = new ArmyData(armySize, startingArmyQuality, true);
@@ -135,7 +165,10 @@ public class GeneralSpawner : MonoBehaviour
             army.OwnerNation = PlayerNation.Instance?.currentNation;
             GameLog.Log(GameLogCategory.Core, $"✓ [GeneralSpawner] Spawned army for {generalName} (Size: {armySize})");
             GameEvents.ArmySpawned(army, general);
+            return true;
         }
+
+        return false;
     }
     
     private string GetRandomName()
