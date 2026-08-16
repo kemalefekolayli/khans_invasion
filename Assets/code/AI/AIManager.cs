@@ -15,6 +15,7 @@ public class AIManager : MonoBehaviour
     public List<AINationController> AINations => aiNations; // For Debugger
     private bool initialized = false;
     private readonly AIWorldIntelCache worldIntelCache = new AIWorldIntelCache();
+    private readonly AIDecisionTelemetryBuffer decisionTelemetry = new AIDecisionTelemetryBuffer();
     private readonly List<AIRaidPressure> raidPressures = new List<AIRaidPressure>();
     private int totalAIRaids;
     private int totalAIConquests;
@@ -170,6 +171,7 @@ public class AIManager : MonoBehaviour
             worldIntelCache.RebuildIfNeeded(allNations);
             TrimExpiredRaidPressure(turnNumber);
             controller.ProcessTurn(turnNumber, worldIntelCache);
+            decisionTelemetry.Record(controller, turnNumber, Settings);
         }
 
         if (logAISummary)
@@ -262,6 +264,16 @@ public class AIManager : MonoBehaviour
     public AIActivityMetrics GetActivityMetrics()
     {
         return new AIActivityMetrics(totalAIRaids, totalAIConquests, totalAIRaidLoot);
+    }
+
+    public IReadOnlyList<AIDecisionTelemetryRecord> GetDecisionTelemetrySnapshot()
+    {
+        return decisionTelemetry.GetSnapshot();
+    }
+
+    public string ExportDecisionTelemetryJsonLines()
+    {
+        return decisionTelemetry.ToJsonLines();
     }
 
     public bool ShouldEscalateToConquest(NationModel raider, NationModel defender, AIWarContext context)

@@ -3,6 +3,14 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "AISettings", menuName = "AI/AISettings")]
 public class AISettings : ScriptableObject
 {
+    [Header("AI Decision Telemetry")]
+    [Tooltip("Record one bounded decision snapshot per AI nation after its turn action completes.")]
+    public bool EnableDecisionTelemetry = false;
+    [Tooltip("Emit each compact telemetry JSON record through GameLog in addition to retaining it in memory.")]
+    public bool EmitDecisionTelemetryToGameLog = true;
+    [Tooltip("Maximum number of decision records retained in memory.")]
+    [Min(1)] public int DecisionTelemetryBufferCapacity = 512;
+
     [Header("Aggression Scale")]
     [Tooltip("Lowest AI aggression level.")]
     public int AggressionMin = 1;
