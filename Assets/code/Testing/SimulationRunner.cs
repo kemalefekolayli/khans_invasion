@@ -10,7 +10,7 @@ namespace Khans.Invasion.Testing
     /// <summary>Headless driver for deterministic AI simulation runs. Invoke with -executeMethod Khans.Invasion.Testing.SimulationRunner.Run.</summary>
     public static class SimulationRunner
     {
-        private const string GameScenePath = "Assets/Scenes/GameScene.unity";
+        private const string LoadingScenePath = "Assets/Scenes/LoadingScene.unity";
         private static bool batchMode;
 
         [MenuItem("Tools/Simulation/Run Headless")]
@@ -41,7 +41,7 @@ namespace Khans.Invasion.Testing
                 return;
             }
 
-            EditorSceneManager.OpenScene(GameScenePath, OpenSceneMode.Single);
+            EditorSceneManager.OpenScene(LoadingScenePath, OpenSceneMode.Single);
             EditorApplication.isPlaying = true;
         }
 

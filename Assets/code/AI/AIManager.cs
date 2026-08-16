@@ -84,7 +84,17 @@ public class AIManager : MonoBehaviour
 
     private void OnPlayerNationReady()
     {
-        if (initialized) return;
+        EnsureInitializedIfReady();
+    }
+
+    private void Start()
+    {
+        EnsureInitializedIfReady();
+    }
+
+    private void EnsureInitializedIfReady()
+    {
+        if (initialized || PlayerNation.Instance?.Nation == null) return;
         InitializeAINations();
     }
 

@@ -47,6 +47,7 @@ namespace Khans.Invasion.Testing
         private static float requestedTimeout = 120f;
         private static int requestedSeed;
         private static string requestedReportFileName = ReportFileName;
+        private static SimulationController activeRequestedInstance;
         private const string ExternalRequestFileName = "mcp_simulation.request";
 
         public static bool LastResult { get; private set; } = true;
@@ -62,6 +63,7 @@ namespace Khans.Invasion.Testing
         private float runStartTime;
         private Coroutine turnLoop;
         private bool telemetryCaptureStarted;
+        private bool requestedSeedApplied;
         private const int MaximumTelemetryRecordCapacity = 50000;
 
         public static void RequestRun(
@@ -125,20 +127,41 @@ namespace Khans.Invasion.Testing
         }
         private void Awake()
         {
-            if (!runRequested) return;
+            if (runRequested)
+            {
+                if (activeRequestedInstance != null && activeRequestedInstance != this)
+                {
+                    enabled = false;
+                    Destroy(gameObject);
+                    return;
+                }
 
+                activeRequestedInstance = this;
+                DontDestroyOnLoad(gameObject);
+            }
+
+            ApplyRequestedConfiguration();
+        }
+
+        private void ApplyRequestedConfiguration()
+        {
+            if (!runRequested) return;
             mode = requestedMode;
             turnsToRun = requestedTurns;
             turnIntervalSeconds = requestedTurnInterval;
             timeoutSeconds = requestedTimeout;
-            if (requestedSeed != 0)
+            if (requestedSeed != 0 && !requestedSeedApplied)
             {
                 UnityEngine.Random.InitState(requestedSeed);
+                requestedSeedApplied = true;
             }
         }
 
         private void Start()
         {
+            TryConsumeExternalRequest();
+            ApplyRequestedConfiguration();
+
             if (!autoStart && !runRequested)
             {
                 return;
@@ -170,6 +193,8 @@ namespace Khans.Invasion.Testing
             Application.logMessageReceived -= OnLogMessageReceived;
             GameEvents.OnPlayerNationReady -= OnPlayerNationReady;
             StopTelemetryCapture();
+            if (activeRequestedInstance == this)
+                activeRequestedInstance = null;
         }
 
         private IEnumerator BeginTelemetryAndRunTurns()
