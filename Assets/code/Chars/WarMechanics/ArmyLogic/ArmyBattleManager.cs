@@ -6,7 +6,7 @@ public class ArmyBattleManager : MonoBehaviour
     public static ArmyBattleManager Instance { get; private set; }
 
     [Header("Detection")]
-    [SerializeField] private float battleRadius = 0.75f;
+    [SerializeField] private float battleRadius = 1f;
     [SerializeField] private float retreatRadiusMultiplier = 1.35f;
     [SerializeField] private float scanIntervalSeconds = 0.4f;
     [SerializeField] private bool logScanDiagnostics = true;

@@ -1745,7 +1745,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ea4ed63c4f84c14996d910a95345d73, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  battleRadius: 0.75
+  battleRadius: 1
   retreatRadiusMultiplier: 1.35
   scanIntervalSeconds: 0.4
   logScanDiagnostics: 1
