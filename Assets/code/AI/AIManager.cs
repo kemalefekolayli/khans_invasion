@@ -21,6 +21,8 @@ public class AIManager : MonoBehaviour
     private int totalAIConquests;
     private float totalAIRaidLoot;
 
+    public bool IsInitialized => initialized;
+
     public readonly struct AIActivityMetrics
     {
         public readonly int RaidCount;
@@ -274,6 +276,16 @@ public class AIManager : MonoBehaviour
     public string ExportDecisionTelemetryJsonLines()
     {
         return decisionTelemetry.ToJsonLines();
+    }
+
+    public void BeginRuntimeDecisionTelemetryCapture(int capacity, bool emitToGameLog = false)
+    {
+        decisionTelemetry.BeginRuntimeCapture(capacity, emitToGameLog);
+    }
+
+    public void EndRuntimeDecisionTelemetryCapture()
+    {
+        decisionTelemetry.EndRuntimeCapture();
     }
 
     public bool ShouldEscalateToConquest(NationModel raider, NationModel defender, AIWarContext context)

@@ -5,18 +5,41 @@ using UnityEngine;
 public sealed class AIDecisionTelemetryBuffer
 {
     private readonly Queue<AIDecisionTelemetryRecord> records = new Queue<AIDecisionTelemetryRecord>();
+    private bool runtimeCaptureEnabled;
+    private bool runtimeGameLogEmission;
+    private int runtimeCapacity = 1;
+
+    public void BeginRuntimeCapture(int capacity, bool emitToGameLog)
+    {
+        records.Clear();
+        runtimeCapacity = Mathf.Max(1, capacity);
+        runtimeGameLogEmission = emitToGameLog;
+        runtimeCaptureEnabled = true;
+    }
+
+    public void EndRuntimeCapture()
+    {
+        runtimeCaptureEnabled = false;
+        runtimeGameLogEmission = false;
+    }
 
     public void Record(AINationController controller, int turn, AISettings settings)
     {
-        if (settings == null || !settings.EnableDecisionTelemetry || controller?.Nation == null) return;
+        bool settingsCaptureEnabled = settings != null && settings.EnableDecisionTelemetry;
+        if ((!runtimeCaptureEnabled && !settingsCaptureEnabled) || controller?.Nation == null) return;
 
         AIDecisionTelemetryRecord record = Capture(controller, turn);
-        int capacity = Mathf.Max(1, settings.DecisionTelemetryBufferCapacity);
+        int capacity = runtimeCaptureEnabled
+            ? runtimeCapacity
+            : Mathf.Max(1, settings.DecisionTelemetryBufferCapacity);
         while (records.Count >= capacity)
             records.Dequeue();
         records.Enqueue(record);
 
-        if (settings.EmitDecisionTelemetryToGameLog)
+        bool emitToGameLog = runtimeCaptureEnabled
+            ? runtimeGameLogEmission
+            : settings.EmitDecisionTelemetryToGameLog;
+        if (emitToGameLog)
             GameLog.Diagnostic(GameLogCategory.AI, record.ToCompactJson());
     }
 

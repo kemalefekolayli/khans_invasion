@@ -61,6 +61,8 @@ namespace Khans.Invasion.Testing
         private int turnsAdvanced = 0;
         private float runStartTime;
         private Coroutine turnLoop;
+        private bool telemetryCaptureStarted;
+        private const int MaximumTelemetryRecordCapacity = 50000;
 
         public static void RequestRun(
             SimulationMode mode,
@@ -160,13 +162,31 @@ namespace Khans.Invasion.Testing
         {
             if (started || finished) return;
             started = true;
-            turnLoop = StartCoroutine(RunTurns());
+            turnLoop = StartCoroutine(BeginTelemetryAndRunTurns());
         }
 
         private void OnDestroy()
         {
             Application.logMessageReceived -= OnLogMessageReceived;
             GameEvents.OnPlayerNationReady -= OnPlayerNationReady;
+            StopTelemetryCapture();
+        }
+
+        private IEnumerator BeginTelemetryAndRunTurns()
+        {
+            while (AIManager.Instance == null || !AIManager.Instance.IsInitialized)
+                yield return null;
+
+            if (runRequested)
+            {
+                long requestedCapacity = (long)Mathf.Max(1, turnsToRun)
+                    * Mathf.Max(1, AIManager.Instance.AINations.Count);
+                int capacity = (int)Math.Min(MaximumTelemetryRecordCapacity, requestedCapacity);
+                AIManager.Instance.BeginRuntimeDecisionTelemetryCapture(capacity, false);
+                telemetryCaptureStarted = true;
+            }
+
+            yield return RunTurns();
         }
 
         private void Update()
@@ -464,7 +484,14 @@ namespace Khans.Invasion.Testing
             GameEvents.OnPlayerNationReady -= OnPlayerNationReady;
             runRequested = false;
 
-            WriteReport();
+            try
+            {
+                WriteReport();
+            }
+            finally
+            {
+                StopTelemetryCapture();
+            }
             LastResult = !failing;
 
 #if UNITY_EDITOR
@@ -506,6 +533,9 @@ namespace Khans.Invasion.Testing
             sb.AppendLine();
             sb.AppendLine(failing ? "RESULT: FAIL" : "RESULT: PASS");
 
+            if (telemetryCaptureStarted)
+                AppendDecisionTelemetry(sb);
+
             try
             {
                 string projectRoot = Directory.GetParent(Application.dataPath).FullName;
@@ -519,6 +549,79 @@ namespace Khans.Invasion.Testing
             {
                 GameLog.Error(GameLogCategory.Core, $"[SimulationController] Failed to write report: {e.Message}");
             }
+        }
+
+        private void AppendDecisionTelemetry(StringBuilder report)
+        {
+            IReadOnlyList<AIDecisionTelemetryRecord> records = AIManager.Instance != null
+                ? AIManager.Instance.GetDecisionTelemetrySnapshot()
+                : new List<AIDecisionTelemetryRecord>();
+
+            Dictionary<string, int> stateCounts = new Dictionary<string, int>();
+            HashSet<long> nationsWithRecords = new HashSet<long>();
+            HashSet<long> nationsWithMilitaryActions = new HashSet<long>();
+            Dictionary<long, string> nationNames = new Dictionary<long, string>();
+
+            foreach (AIDecisionTelemetryRecord record in records)
+            {
+                if (record == null) continue;
+                string state = string.IsNullOrEmpty(record.selectedState) ? "Unknown" : record.selectedState;
+                stateCounts[state] = stateCounts.TryGetValue(state, out int count) ? count + 1 : 1;
+                nationsWithRecords.Add(record.nationId);
+                nationNames[record.nationId] = record.nationName;
+                if (HasMilitaryAction(record))
+                    nationsWithMilitaryActions.Add(record.nationId);
+            }
+
+            report.AppendLine();
+            report.AppendLine("=== AI DECISION TELEMETRY SUMMARY ===");
+            report.AppendLine($"Decision records: {records.Count}");
+            report.Append("State decisions:");
+            foreach (KeyValuePair<string, int> pair in stateCounts)
+                report.Append($" {pair.Key}={pair.Value}");
+            if (stateCounts.Count == 0) report.Append(" (none)");
+            report.AppendLine();
+
+            report.Append("AI nations with zero military actions:");
+            int zeroMilitaryCount = 0;
+            foreach (long nationId in nationsWithRecords)
+            {
+                if (nationsWithMilitaryActions.Contains(nationId)) continue;
+                report.Append($" {nationNames[nationId]}");
+                zeroMilitaryCount++;
+            }
+            if (zeroMilitaryCount == 0) report.Append(" (none)");
+            report.AppendLine();
+
+            report.AppendLine();
+            report.AppendLine("=== AI DECISION TELEMETRY JSONL ===");
+            string jsonLines = AIManager.Instance != null
+                ? AIManager.Instance.ExportDecisionTelemetryJsonLines()
+                : string.Empty;
+            report.AppendLine(string.IsNullOrEmpty(jsonLines) ? "(none)" : jsonLines);
+        }
+
+        private static bool HasMilitaryAction(AIDecisionTelemetryRecord record)
+        {
+            if (record == null || string.IsNullOrEmpty(record.lastActionDescription)) return false;
+            string turnPrefix = $"Turn {record.turn}:";
+            if (!record.lastActionDescription.StartsWith(turnPrefix, StringComparison.Ordinal)) return false;
+            if (record.lastActionDescription.IndexOf("no connected", StringComparison.OrdinalIgnoreCase) >= 0
+                || record.lastActionDescription.IndexOf("no valid", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return false;
+            }
+
+            return record.selectedState == AIState.Attacking.ToString()
+                || record.selectedState == AIState.Recruiting.ToString()
+                || record.selectedState == AIState.Fortifying.ToString();
+        }
+
+        private void StopTelemetryCapture()
+        {
+            if (!telemetryCaptureStarted) return;
+            AIManager.Instance?.EndRuntimeDecisionTelemetryCapture();
+            telemetryCaptureStarted = false;
         }
     }
 
